@@ -1,17 +1,5 @@
-;; Copyright (c) 2017-2020 Ag Ibragimov & Contributors
-;;
-;;; Author: Ag Ibragimov <agzam.ibragimov@gmail.com>
-;;
-;;; Contributors:
-;;   Jay Zawrotny <jayzawrotny@gmail.com>
-;;
-;;; URL: https://github.com/agzam/spacehammer
-;;
-;;; License: MIT
-;;
-
-
 (require-macros :lib.macros)
+(require-macros :lib.advice.macros)
 (local windows (require :windows))
 (local emacs (require :emacs))
 (local slack (require :slack))
@@ -98,25 +86,15 @@
   (fn activate []
     (windows.activate-app app-name)))
 
-(fn toggle-console
-  []
-  "
-  A simple action function to toggle the hammer spoon console.
-  Change the keybinding in the common keys section of this config file.
-  "
-  (if-let [console (hs.console.hswindow)]
-          (hs.closeConsole)
-          (hs.openConsole)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; General
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; If you would like to customize this we recommend copying this file to
-;; ~/.hammerspoon/private/config.fnl. That will be used in place of the default
+;; ~/.spacehammer/config.fnl. That will be used in place of the default
 ;; and will not be overwritten by upstream changes when spacehammer is updated.
-(local music-app "Google Play Music Desktop Player")
+(local music-app "YouTube Music.app")
 
 (local return
        {:key :space
@@ -250,7 +228,7 @@
           :action "windows:show-grid"}
          {:key :u
           :title "Undo"
-          :action "windows:undo-action"}]))
+          :action "windows:undo"}]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Apps Menu
@@ -263,25 +241,31 @@
          :action (activator "Emacs")}
         {:key :g
          :title "Browser"
-         :action (activator "Brave")}
+         :action (activator "brave browser")}
         {:key :f
          :title "Firefox"
          :action (activator "Firefox")}
         {:key :i
          :title "iTerm"
-         :action (activator "iTerm2")}
-        {:key :s
-         :title "Slack"
-         :action (activator "Slack")}
-        {:key :b
-         :title "Brave"
-         :action (activator "Brave")}
+         :action (activator "iterm")}
+        ;; {:key :s
+        ;;  :title "Slack"
+        ;;  :action (activator "Slack")}
         {:key :t
          :title "Telegram"
          :action (activator "Telegram Desktop")}
+        {:key :b
+         :title "Brave"
+         :action (activator "brave browser")}
         {:key :m
          :title music-app
-         :action (activator music-app)}])
+         :action (activator music-app)}
+        {:key :w
+         :title "Webex"
+         :action (activator "Webex")}
+        {:key :d
+         :title "Discord"
+         :action (activator "Discord")}])
 
 (local media-bindings
        [return
@@ -351,15 +335,15 @@
        [{:mods [:cmd]
          :key :space
          :action "lib.modal:activate-modal"}
-        {:mods [:cmd]
-         :key :n
+        {:mods [:cmd :ctrl]
+         :key "."
          :action "apps:next-app"}
-        {:mods [:cmd]
-         :key :p
+        {:mods [:cmd :ctrl]
+         :key ","
          :action "apps:prev-app"}
         {:mods [:cmd :ctrl]
          :key "`"
-         :action toggle-console}
+         :action hs.toggleConsole}
         {:mods [:cmd :ctrl]
          :key :o
          :action "emacs:edit-with-emacs"}])
@@ -481,6 +465,8 @@
                 :action "slack:up"
                 :repeat true}]})
 
+(local {:telegram-config telegram-config} (require :telegram))
+
 (local apps
        [brave-config
         chrome-config
@@ -488,7 +474,8 @@
         emacs-config
         grammarly-config
         hammerspoon-config
-        slack-config])
+        slack-config
+        telegram-config])
 
 (local config
        {:title "Main Menu"
@@ -497,12 +484,22 @@
         :enter (fn [] (windows.hide-display-numbers))
         :exit  (fn [] (windows.hide-display-numbers))
         :apps  apps
-        :hyper {:key :F18}})
+        :hyper {:key :F18}
+        :modules {:windows {:center-ratio "30:60"}}
+        :grid {:size "6x2"}})
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Exports
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (set hs.window.animationDuration 0.1)
+(tset hs.alert.defaultStyle :fadeInDuration 0.1)
+(tset hs.alert.defaultStyle :fadeOutDuration 0.1)
+
+(local repl (require :repl))
+(repl.run (repl.start {:port "9898"}))
+
+
 
 config
