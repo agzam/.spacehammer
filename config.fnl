@@ -331,6 +331,8 @@
          :title "Emacs"
          :items emacs-bindings}])
 
+(require :browser)
+
 (local common-keys
        [{:mods [:cmd]
          :key :space
@@ -346,7 +348,11 @@
          :action hs.toggleConsole}
         {:mods [:cmd :ctrl]
          :key :o
-         :action "emacs:edit-with-emacs"}])
+         :action "emacs:edit-with-emacs"}
+        {:mods [:cmd :shift]
+         :key :c
+         :action "browser:inspect-elements"}
+        ])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; App Specific Config
@@ -466,6 +472,7 @@
                 :repeat true}]})
 
 (local {:telegram-config telegram-config} (require :telegram))
+(local {:config webex-config} (require :webex))
 
 (local apps
        [brave-config
@@ -475,7 +482,8 @@
         grammarly-config
         hammerspoon-config
         slack-config
-        telegram-config])
+        telegram-config
+        webex-config])
 
 (local config
        {:title "Main Menu"
@@ -499,7 +507,6 @@
 
 (local repl (require :repl))
 (repl.run (repl.start {:port "9898"}))
-
 
 
 config

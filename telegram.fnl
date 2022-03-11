@@ -2,11 +2,13 @@
 
 (fn scroll-up
   []
-  (hs.eventtap.keyStroke [] "pageup"))
+  (for [_ 1 10]
+   (hs.eventtap.keyStroke [:shift] "up" 0)))
 
 (fn scroll-down
   []
-  (hs.eventtap.keyStroke [] "pagedown"))
+  (for [_ 1 10]
+   (hs.eventtap.keyStroke [] "down" 0)))
 
 (fn edit-previous
   []
