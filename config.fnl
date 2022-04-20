@@ -332,6 +332,7 @@
          :items emacs-bindings}])
 
 (require :browser)
+(require :language)
 
 (local common-keys
        [{:mods [:cmd]
@@ -352,6 +353,9 @@
         {:mods [:cmd :shift]
          :key :c
          :action "browser:inspect-elements"}
+        {:mods [:cmd :ctrl]
+         :key "\\"
+         :action "language:switch-layout"}
         ])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
