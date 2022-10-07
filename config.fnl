@@ -239,15 +239,15 @@
         {:key :e
          :title "Emacs"
          :action (activator "Emacs")}
-        {:key :g
+        {:key :b
          :title "Browser"
          :action (activator "brave browser")}
         {:key :f
          :title "Firefox"
          :action (activator "Firefox")}
         {:key :i
-         :title "iTerm"
-         :action (activator "iterm")}
+         :title "Terminal"
+         :action (activator "kitty")}
         ;; {:key :s
         ;;  :title "Slack"
         ;;  :action (activator "Slack")}
@@ -260,7 +260,7 @@
         {:key :m
          :title music-app
          :action (activator music-app)}
-        {:key :w
+        {:key :x
          :title "Webex"
          :action (activator "Webex")}
         {:key :d
@@ -312,7 +312,7 @@
 (local menu-items
        [{:key    :space
          :title  "Alfred"
-         :action (activator "Alfred 4")}
+         :action (activator "Alfred 5")}
         {:key   :w
          :title "Window"
          :enter "windows:enter-window-menu"
@@ -505,9 +505,10 @@
 ;; Exports
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(set hs.window.animationDuration 0.1)
+(set hs.window.animationDuration 0)
 (tset hs.alert.defaultStyle :fadeInDuration 0.1)
 (tset hs.alert.defaultStyle :fadeOutDuration 0.1)
+(set hs.grid.ui.showExtraKeys true)
 
 (local repl (require :repl))
 (repl.run (repl.start {:port "9898"}))
