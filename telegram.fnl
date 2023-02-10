@@ -2,13 +2,13 @@
 
 (fn scroll-up
   []
-  (for [_ 1 10]
-   (hs.eventtap.keyStroke [:shift] "up" 0)))
+  (for [_ 1 50]
+   (hs.eventtap.keyStroke [:shift] "up" 10)))
 
 (fn scroll-down
   []
-  (for [_ 1 10]
-   (hs.eventtap.keyStroke [] "down" 0)))
+  (for [_ 1 50]
+   (hs.eventtap.keyStroke [] "down" 10)))
 
 (fn edit-previous
   []
@@ -17,7 +17,7 @@
 (fn contacts
   []
   (when-let [app (: (hs.window.focusedWindow) :application)]
-            (: app :selectMenuItem ["Window" "Contacts"])))
+            (: app :selectMenuItem ["Telegram" "Quick Search"])))
 
 (fn prev-chat
   []
