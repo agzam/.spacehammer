@@ -477,6 +477,7 @@
 
 (local {:telegram-config telegram-config} (require :telegram))
 (local {:config webex-config} (require :webex))
+(local {:kitty-config kitty-config} (require :kitty))
 
 (local apps
        [brave-config
@@ -487,7 +488,8 @@
         hammerspoon-config
         slack-config
         telegram-config
-        webex-config])
+        webex-config
+        kitty-config])
 
 (local config
        {:title "Main Menu"
@@ -513,6 +515,5 @@
 
 ;; (local repl (require :repl))
 ;; (repl.run (repl.start {:port "9898"}))
-
 
 config
