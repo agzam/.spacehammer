@@ -9,6 +9,8 @@ https://github.com/Hammerspoon/hammerspoon/issues/3320"
 (hs.hotkey.bind [:cmd :shift :option :ctrl] "0" reset-screen)
 
 (fn reset-hs []
-  (io.popen "killall Hammerspoon && open -a Hammerspoon &"))
+  ;; (io.popen "killall Hammerspoon && open -a Hammerspoon &")
+  (hs.alert "Clearing console")
+  (hs.console.clearConsole))
 
 (hs.hotkey.bind [:cmd :shift :ctrl] "0" reset-hs)

@@ -353,6 +353,9 @@
         {:mods [:cmd :shift]
          :key :c
          :action "browser:inspect-elements"}
+        {:mods [:cmd]
+         :key :t
+         :action "browser:open-new-tab"}
         {:mods [:cmd :ctrl]
          :key "\\"
          :action "language:switch-layout"}

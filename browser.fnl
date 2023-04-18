@@ -18,4 +18,16 @@ Cmd+Shift+c while not only in the browser."
           (windows.set-mouse-cursor-at (first browsers))
           (inspect browser)))))
 
-{:inspect-elements inspect-elements}
+(fn open-new-tab []
+  "Too often I press Cmd-Tab in Emacs, thinking the active focus is on the browser."
+  (let [app (-> (hs.window.focusedWindow) (: :application))
+        new-tab (fn [app] (: app :selectMenuItem [:File "New Tab"]))]
+    (if (-> app (: :name) (not= "Emacs"))
+        (hs.eventtap.keyStroke [:cmd] "t" app)
+        (let [browser (hs.application.find (first browsers))]
+          (: browser :activate)
+          (windows.set-mouse-cursor-at (first browsers))
+          (new-tab browser)))))
+
+{:inspect-elements inspect-elements
+ :open-new-tab open-new-tab}
