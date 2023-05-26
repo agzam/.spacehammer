@@ -94,7 +94,7 @@
 ;; If you would like to customize this we recommend copying this file to
 ;; ~/.spacehammer/config.fnl. That will be used in place of the default
 ;; and will not be overwritten by upstream changes when spacehammer is updated.
-(local music-app "YouTube Music.app")
+(local music-app "YouTube Music")
 
 (local return
        {:key :space
@@ -265,6 +265,8 @@
          :title "Discord"
          :action (activator "Discord")}])
 
+(require :yt-music)
+
 (local media-bindings
        [return
         {:key :s
@@ -286,7 +288,15 @@
          :repeatable true}
         {:key :a
          :title (.. "Launch " music-app)
-         :action (activator music-app)}])
+         :action (activator music-app)}
+        {:key :1
+         :mods [:shift]
+         :title "Like this song"
+         :action "yt-music:like-this-song"}
+        {:key "3"
+         :mods [:shift]
+         :title "Dislike this song"
+         :action "yt-music:dislike-this-song"}])
 
 (local emacs-bindings
        [return
