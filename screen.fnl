@@ -14,3 +14,26 @@ https://github.com/Hammerspoon/hammerspoon/issues/3320"
   (hs.console.clearConsole))
 
 (hs.hotkey.bind [:cmd :shift :ctrl] "0" reset-hs)
+
+(local windows (require :windows))
+
+(fn open-emacs-on-primary-screen []
+  "Emacs sometimes accidentally gets opened on the secondary monitor.
+No me gusto esto."
+  (let [cur-screen (hs.mouse.getCurrentScreen)
+        primary (hs.screen.primaryScreen)]
+    (if (and (not= cur-screen primary)
+             (not (hs.application.find "Emacs")))
+        (do
+          (hs.application.launchOrFocus "Emacs")
+          (hs.timer.doAfter
+           .1
+           (fn []
+             (->
+              (hs.application.find "Emacs")
+              (: :mainWindow)
+              (: :moveToScreen primary)))))
+        (windows.activate-app "Emacs"))))
+
+{:open-emacs-on-primary-screen
+  open-emacs-on-primary-screen}

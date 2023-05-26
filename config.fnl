@@ -233,12 +233,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Apps Menu
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(local screen (require :screen))
 
 (local app-bindings
        [return
         {:key :e
          :title "Emacs"
-         :action (activator "Emacs")}
+         :action "screen:open-emacs-on-primary-screen"}
         {:key :b
          :title "Browser"
          :action (activator "brave browser")}
