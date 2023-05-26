@@ -255,9 +255,6 @@
         {:key :t
          :title "Telegram"
          :action (activator "Telegram")}
-        {:key :b
-         :title "Brave"
-         :action (activator "brave browser")}
         {:key :m
          :title music-app
          :action (activator music-app)}
@@ -506,7 +503,6 @@
         :modules {:windows {:center-ratio "30:60"}}
         :grid {:size "6x2"}})
 
-(require :screen)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Exports
@@ -516,7 +512,7 @@
 (tset hs.alert.defaultStyle :fadeInDuration 0.1)
 (tset hs.alert.defaultStyle :fadeOutDuration 0.1)
 (set hs.grid.ui.showExtraKeys true)
-
+(hs.logger.historySize 0)
 ;; (local repl (require :repl))
 ;; (repl.run (repl.start {:port "9898"}))
 

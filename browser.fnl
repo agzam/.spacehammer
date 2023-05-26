@@ -3,7 +3,7 @@
 (local {: contains?
         : first} (require :lib.functional))
 
-(local browsers ["Brave Browser" "Google Chrome"])
+(local browsers ["Brave Browser" "Firefox" "Google Chrome"])
 
 (fn inspect-elements []
   "When I'm working on web related stuff, I often have to inspect elements, and I constantly
