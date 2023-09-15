@@ -4,6 +4,7 @@
 (local emacs (require :emacs))
 (local slack (require :slack))
 (local vim (require :vim))
+(local multimedia (require :multimedia))
 
 (local {:concat concat
         :logf logf} (require :lib.functional))
@@ -94,7 +95,8 @@
 ;; If you would like to customize this we recommend copying this file to
 ;; ~/.spacehammer/config.fnl. That will be used in place of the default
 ;; and will not be overwritten by upstream changes when spacehammer is updated.
-(local music-app "YouTube Music")
+;; (local music-app "YouTube Music")
+(local music-app "Spotify")
 
 (local return
        {:key :space
@@ -265,19 +267,37 @@
          :title "Discord"
          :action (activator "Discord")}])
 
-(require :yt-music)
+(require :spotify)
 
 (local media-bindings
        [return
         {:key :s
          :title "Play or Pause"
-         :action "multimedia:play-or-pause"}
+         :action "spotify:play-or-pause"}
         {:key :h
          :title "Prev Track"
-         :action "multimedia:prev-track"}
+         :action "spotify:prev-track"}
         {:key :l
          :title "Next Track"
-         :action "multimedia:next-track"}
+         :action "spotify:next-track"}
+        {:key :b
+         :title "Backward"
+         :action "spotify:seek-backward"
+         :repeatable true}
+        {:key :w
+         :title "Forward"
+         :action "spotify:seek-forward"
+         :repeatable true}
+        {:key ","
+         :mods [:shift]
+         :title "Slower"
+         :action "spotify:slower"
+         :repeatable true}
+        {:key "."
+         :mods [:shift]
+         :title "Faster"
+         :action "spotify:faster"
+         :repeatable true}
         {:key :j
          :title "Volume Down"
          :action "multimedia:volume-down"
@@ -286,17 +306,22 @@
          :title "Volume Up"
          :action "multimedia:volume-up"
          :repeatable true}
+        {:key :m
+         :mods [:shift]
+         :title "Volume Up"
+         :action "spotify:mute"
+         :repeatable true}
         {:key :a
          :title (.. "Launch " music-app)
          :action (activator music-app)}
         {:key :1
          :mods [:shift]
          :title "Like this song"
-         :action "yt-music:like-this-song"}
+         :action "spotify:like-this-song"}
         {:key "3"
          :mods [:shift]
          :title "Dislike this song"
-         :action "yt-music:dislike-this-song"}])
+         :action "spotify:dislike-this-song"}])
 
 (local emacs-bindings
        [return
@@ -367,7 +392,26 @@
         {:mods [:cmd :ctrl]
          :key "\\"
          :action "language:switch-layout"}
-        ])
+        {:mods [:cmd :alt]
+         :key "h"
+         :action
+         (fn []
+           (hs.eventtap.keyStroke [] "left"))}
+        {:mods [:cmd :alt]
+         :key "l"
+         :action
+         (fn []
+           (hs.eventtap.keyStroke [] "right"))}
+        {:mods [:cmd :alt]
+         :key "k"
+         :action
+         (fn []
+           (hs.eventtap.keyStroke [] "up"))}
+        {:mods [:cmd :alt]
+         :key "j"
+         :action
+         (fn []
+           (hs.eventtap.keyStroke [] "down"))}])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; App Specific Config
