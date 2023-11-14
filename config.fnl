@@ -95,8 +95,8 @@
 ;; If you would like to customize this we recommend copying this file to
 ;; ~/.spacehammer/config.fnl. That will be used in place of the default
 ;; and will not be overwritten by upstream changes when spacehammer is updated.
-;; (local music-app "YouTube Music")
-(local music-app "Spotify")
+(local music-app "YouTube Music")
+;; (local music-app "Spotify")
 
 (local return
        {:key :space
@@ -251,9 +251,9 @@
         {:key :i
          :title "Terminal"
          :action (activator "kitty")}
-        ;; {:key :s
-        ;;  :title "Slack"
-        ;;  :action (activator "Slack")}
+        {:key :s
+         :title "Slack"
+         :action (activator "Slack")}
         {:key :t
          :title "Telegram"
          :action (activator "Telegram")}
@@ -267,37 +267,19 @@
          :title "Discord"
          :action (activator "Discord")}])
 
-(require :spotify)
+(require :yt-music)
 
 (local media-bindings
        [return
         {:key :s
          :title "Play or Pause"
-         :action "spotify:play-or-pause"}
+         :action "multimedia:play-or-pause"}
         {:key :h
          :title "Prev Track"
-         :action "spotify:prev-track"}
+         :action "multimedia:prev-track"}
         {:key :l
          :title "Next Track"
-         :action "spotify:next-track"}
-        {:key :b
-         :title "Backward"
-         :action "spotify:seek-backward"
-         :repeatable true}
-        {:key :w
-         :title "Forward"
-         :action "spotify:seek-forward"
-         :repeatable true}
-        {:key ","
-         :mods [:shift]
-         :title "Slower"
-         :action "spotify:slower"
-         :repeatable true}
-        {:key "."
-         :mods [:shift]
-         :title "Faster"
-         :action "spotify:faster"
-         :repeatable true}
+         :action "multimedia:next-track"}
         {:key :j
          :title "Volume Down"
          :action "multimedia:volume-down"
@@ -306,22 +288,17 @@
          :title "Volume Up"
          :action "multimedia:volume-up"
          :repeatable true}
-        {:key :m
-         :mods [:shift]
-         :title "Volume Up"
-         :action "spotify:mute"
-         :repeatable true}
         {:key :a
          :title (.. "Launch " music-app)
          :action (activator music-app)}
         {:key :1
          :mods [:shift]
          :title "Like this song"
-         :action "spotify:like-this-song"}
+         :action "yt-music:like-this-song"}
         {:key "3"
          :mods [:shift]
          :title "Dislike this song"
-         :action "spotify:dislike-this-song"}])
+         :action "yt-music:dislike-this-song"}])
 
 (local emacs-bindings
        [return
@@ -528,6 +505,14 @@
                {:mods [:ctrl]
                 :key :k
                 :action "slack:up"
+                :repeat true}
+               {:mods [:ctrl]
+                :key :n
+                :action "slack:down"
+                :repeat true}
+               {:mods [:ctrl]
+                :key :p
+                :action "slack:up"
                 :repeat true}]})
 
 (local {:telegram-config telegram-config} (require :telegram))
@@ -555,7 +540,7 @@
         :apps  apps
         :hyper {:key :F18}
         :modules {:windows {:center-ratio "30:60"}}
-        :grid {:size "6x2"}})
+        :grid {:size "6x3"}})
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

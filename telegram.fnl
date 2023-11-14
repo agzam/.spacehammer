@@ -33,7 +33,7 @@
  :prev-chat prev-chat
  :next-chat next-chat
  :contacts contacts
- :telegram-config {:key "Telegram"
+ :telegram-config {:key "Telegram Desktop"
                    :keys [{:mods [:ctrl]
                            :key :e
                            :action "telegram:scroll-down"}
