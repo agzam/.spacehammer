@@ -237,17 +237,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (local screen (require :screen))
 
+(hs.hotkey.bind [:cmd :shift :option :ctrl] "1" (activator "Slack"))
+(hs.hotkey.bind [:cmd :shift :option :ctrl] "2" (activator "brave browser"))
+(hs.hotkey.bind [:cmd :shift :option :ctrl] "3" (activator "Emacs"))
+
 (local app-bindings
        [return
         {:key :e
          :title "Emacs"
-         :action "screen:open-emacs-on-primary-screen"}
+         :action (activator "Emacs")}
         {:key :b
          :title "Browser"
          :action (activator "brave browser")}
-        {:key :f
-         :title "Firefox"
-         :action (activator "Firefox")}
+        ;; {:key :f
+        ;;  :title "Firefox"
+        ;;  :action (activator "Firefox")}
         {:key :i
          :title "Terminal"
          :action (activator "kitty")}
@@ -260,12 +264,10 @@
         {:key :m
          :title music-app
          :action (activator music-app)}
-        {:key :x
-         :title "Webex"
-         :action (activator "Webex")}
-        {:key :d
-         :title "Discord"
-         :action (activator "Discord")}])
+        ;; {:key :d
+        ;;  :title "Discord"
+        ;;  :action (activator "Discord")}
+        ])
 
 (require :yt-music)
 
