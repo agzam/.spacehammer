@@ -5,6 +5,7 @@
 (local slack (require :slack))
 (local vim (require :vim))
 (local multimedia (require :multimedia))
+(local zoom (require :zoom))
 
 (local {:concat concat
         :logf logf} (require :lib.functional))
@@ -241,6 +242,20 @@
 (hs.hotkey.bind [:cmd :shift :option :ctrl] "2" (activator "brave browser"))
 (hs.hotkey.bind [:cmd :shift :option :ctrl] "3" (activator "Emacs"))
 
+(hs.hotkey.bind
+ [:cmd :shift :option :ctrl] "s"
+ (fn []
+   "TTS Speak selected text."
+   (io.popen "killall sox")
+   (hs.eventtap.keyStroke [:cmd] :c)
+   (let [cmd (string.format
+              (.. "echo '%s' | /opt/homebrew/bin/docker run --rm -i piper-tts "
+                  "--model en_US-hfc_female-medium.onnx "
+                  "--length_scale 0.7 --sentence_silence 0.1 --output_raw "
+                  "| /opt/homebrew/bin/sox -t raw -r 22050 -b 16 -e signed-integer -c 1 - -d")
+              (hs.pasteboard.readString))]
+     (io.popen cmd))))
+
 (local app-bindings
        [return
         {:key :e
@@ -267,7 +282,9 @@
         ;; {:key :d
         ;;  :title "Discord"
         ;;  :action (activator "Discord")}
-        ])
+        {:key :z
+         :title "Zoom"
+         :action (activator "Zoom")}])
 
 (require :yt-music)
 
