@@ -6,6 +6,7 @@
 (local vim (require :vim))
 (local multimedia (require :multimedia))
 (local zoom (require :zoom))
+(local coroutine (require :coroutine))
 
 (local {:concat concat
         :logf logf} (require :lib.functional))
@@ -253,8 +254,13 @@
                   "--model en_US-hfc_female-medium.onnx "
                   "--length_scale 0.7 --sentence_silence 0.1 --output_raw "
                   "| /opt/homebrew/bin/sox -t raw -r 22050 -b 16 -e signed-integer -c 1 - -d")
-              (hs.pasteboard.readString))]
-     (io.popen cmd))))
+              (hs.pasteboard.readString))
+         co (coroutine.create #(io.popen cmd))]
+     (coroutine.resume co))))
+
+(hs.hotkey.bind
+ [:cmd :shift :option :ctrl] "k"
+ (fn [] "Stop speaking." (io.popen "killall sox")))
 
 (local app-bindings
        [return
