@@ -19,7 +19,7 @@ Cmd+Shift+c while not only in the browser."
           (inspect browser)))))
 
 (fn open-new-tab []
-  "Too often I press Cmd-Tab in Emacs, thinking the active focus is on the browser."
+  "Too often I press Cmd+t in Emacs, thinking the active focus is on the browser."
   (let [app (-> (hs.window.focusedWindow) (: :application))
         new-tab (fn [app] (: app :selectMenuItem [:File "New Tab"]))]
     (if (-> app (: :name) (not= "Emacs"))
