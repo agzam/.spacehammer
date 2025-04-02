@@ -6,10 +6,13 @@
 (local vim (require :vim))
 (local multimedia (require :multimedia))
 (local zoom (require :zoom))
+(local screen (require :screen))
 (local coroutine (require :coroutine))
 
 (local {:concat concat
         :logf logf} (require :lib.functional))
+
+(require :my-emacs)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; WARNING
@@ -232,16 +235,48 @@
           :action "windows:show-grid"}
          {:key :u
           :title "Undo"
-          :action "windows:undo"}]))
+          :action "windows:undo"}
+         ;; {:key "["
+         ;;  :title "Widen Left"
+         ;;  :action (fn [] (screen.resize-window :left 30))
+         ;;  :repeatable true}
+         ;; {:key "]"
+         ;;  :title "Widen Right"
+         ;;  :action (fn [] (screen.resize-window :right 30))
+         ;;  :repeatable true}
+         {:mods []
+          :key "["
+          :title "Adjust Left"
+          :action (fn [] (screen.adjust-window-size :left))
+          ;; :action (fn [] (screen.resize-window :left -30))
+          :repeatable true}
+         {:mods []
+          :key "]"
+          :title "Adjust Right"
+          :action (fn [] (screen.adjust-window-size :right))
+          :repeatable true}
+         ;; {:mods [:shift]
+         ;;  :key ","
+         ;;  :title "Snap"
+         ;;  :action (fn [] (screen.snap-left-widen))
+         ;;  :repeatable true}
+         ;; {:mods [:shift]
+         ;;  :key "."
+         ;;  :title "Snap"
+         ;;  :action (fn [] (screen.snap-left-narrow))
+         ;;  :repeatable true}
+         ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Apps Menu
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(local screen (require :screen))
 
 (hs.hotkey.bind [:cmd :shift :option :ctrl] "1" (activator "Slack"))
 (hs.hotkey.bind [:cmd :shift :option :ctrl] "2" (activator "brave browser"))
 (hs.hotkey.bind [:cmd :shift :option :ctrl] "3" (activator "Emacs"))
+
+(fn shell-escape [str]
+  (: (str:gsub "[\\%$\"`''()]" "\\%0") :gsub "!" "\\!"))
 
 (hs.hotkey.bind
  [:cmd :shift :option :ctrl] "s"
@@ -250,11 +285,14 @@
    (io.popen "killall sox")
    (hs.eventtap.keyStroke [:cmd] :c)
    (let [cmd (string.format
-              (.. "echo '%s' | /opt/homebrew/bin/docker run --rm -i piper-tts "
+              (.. "echo \"%s\" | /opt/homebrew/bin/docker run --rm -i piper-tts "
                   "--model en_US-hfc_female-medium.onnx "
                   "--length_scale 0.7 --sentence_silence 0.1 --output_raw "
-                  "| /opt/homebrew/bin/sox -t raw -r 22050 -b 16 -e signed-integer -c 1 - -d")
+                  "| /opt/homebrew/bin/sox -t raw -r 22050 -b 16 -e signed-integer -c 1 -v 0.7 - -d &")
               (hs.pasteboard.readString))
+         _ (hs.alert "Speaking...")
+         ;; logger (hs.logger.new :foo :debug)
+         ;; _ (logger.d cmd)
          co (coroutine.create #(io.popen cmd))]
      (coroutine.resume co))))
 
@@ -484,11 +522,14 @@
                   :action hs.console.clearConsole}])
         :keys []})
 
+(local my-slack (require :my-slack))
+
 (local slack-config
        {:key "Slack"
-        :keys [{:mods [:cmd]
-                :key  :g
-                :action "slack:scroll-to-bottom"}
+        :keys [
+               ;; {:mods [:cmd]
+               ;;  :key  :g
+               ;;  :action "slack:scroll-to-bottom"}
                {:mods [:ctrl]
                 :key :r
                 :action "slack:add-reaction"}
@@ -508,11 +549,11 @@
                 :key :n
                 :action "slack:next-day"}
                {:mods [:ctrl]
-                :key :e
+                :key :y
                 :action "slack:scroll-up"
                 :repeat true}
                {:mods [:ctrl]
-                :key :y
+                :key :e
                 :action "slack:scroll-down"
                 :repeat true}
                {:mods [:ctrl]

@@ -17,7 +17,7 @@
 (fn contacts
   []
   (when-let [app (: (hs.window.focusedWindow) :application)]
-            (: app :selectMenuItem ["Telegram" "Quick Search"])))
+            (app:selectMenuItem ["Telegram" "Quick Search"])))
 
 (fn prev-chat
   []

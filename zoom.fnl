@@ -3,8 +3,8 @@
 (hs.hotkey.bind
  [:cmd :shift :option :ctrl] "m"
  (fn []
-   (let [zoom (hs.application.find "zoom.us")
-         win (zoom:findWindow "Zoom Meeting")
+   (let [win (hs.window.find "Zoom Meeting.*")
+         zoom (win:application)
          mute? (zoom:findMenuItem ["Meeting" "Unmute audio"])]
      (if (and win mute?)
          (do
@@ -17,8 +17,8 @@
 (hs.hotkey.bind
  [:cmd :shift :option :ctrl] "p"
  (fn []
-   (let [zoom (hs.application.find "zoom.us")
-         win (zoom:findWindow "Zoom Meeting")
+   (let [win (hs.window.find "Zoom Meeting.*")
+         zoom (win:application)
          video? (zoom:findMenuItem ["Meeting" "Start video"])]
      (if (and win video?)
          (do
@@ -27,3 +27,18 @@
          (do
            (zoom:selectMenuItem ["Meeting" "Stop video"])
            (hs.alert "You are in the dark! 🕯"))))))
+
+(hs.hotkey.bind
+ [:cmd :shift :option :ctrl] "a"
+ (fn []
+   (let [win (hs.window.find "Zoom Meeting.*")
+         zoom (win:application)
+         mi ["Meeting" "Keep on top"]
+         keep-on-top? (. (zoom:findMenuItem mi) :ticked)]
+     (if (and win keep-on-top?)
+         (do
+           (zoom:selectMenuItem mi)
+           (hs.alert "Zoom Window is normal now"))
+         (do
+           (zoom:selectMenuItem mi)
+           (hs.alert "🎢 Zoom now on top! 🎢"))))))

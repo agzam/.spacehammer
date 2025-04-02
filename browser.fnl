@@ -10,22 +10,22 @@
 press the keybinding without realizing that the browser is not focused. I want to press
 Cmd+Shift+c while not only in the browser."
   (let [app (-> (hs.window.focusedWindow) (: :application))
-        inspect (fn [app] (: app :selectMenuItem [:View :Developer "Inspect Elements"]))]
+        inspect (fn [app] (app:selectMenuItem [:View :Developer "Inspect Elements"]))]
     (if (-> app (: :name) (contains? browsers))
         (inspect app)
         (let [browser (hs.application.find (first browsers))]
-          (: browser :activate)
+          (browser:activate)
           (windows.set-mouse-cursor-at (first browsers))
           (inspect browser)))))
 
 (fn open-new-tab []
   "Too often I press Cmd+t in Emacs, thinking the active focus is on the browser."
   (let [app (-> (hs.window.focusedWindow) (: :application))
-        new-tab (fn [app] (: app :selectMenuItem [:File "New Tab"]))]
+        new-tab (fn [app] (app:selectMenuItem [:File "New Tab"]))]
     (if (-> app (: :name) (not= "Emacs"))
         (hs.eventtap.keyStroke [:cmd] "t" app)
         (let [browser (hs.application.find (first browsers))]
-          (: browser :activate)
+          (browser:activate)
           (windows.set-mouse-cursor-at (first browsers))
           (new-tab browser)))))
 
@@ -74,6 +74,10 @@ where each tab represented as k/v pairs of:
           tabsInfo;" (first browsers))
         (_ tabs) (hs.osascript.javascript script)]
     tabs))
+
+(fn read-page-in-emacs []
+  ;; TODO
+  )
 
 {:inspect-elements inspect-elements
  :open-new-tab open-new-tab

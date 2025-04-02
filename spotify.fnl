@@ -11,17 +11,17 @@
   (let [spotify (spotify-is-running)]
     (when spotify
       (let [cur (hs.window.focusedWindow)]
-        (: spotify :activate)
+        (spotify:activate)
         (hs.eventtap.keyStroke [:alt :shift] "b" spotify)
-        (: cur :focus)))))
+        (cur:focus)))))
 
 (fn dislike-this-song []
   (let [spotify (spotify-is-running)]
     (when spotify
       (let [cur (hs.window.focusedWindow)]
-        (: spotify :activate)
+        (spotify:activate)
         (hs.eventtap.keyStroke [:cmd] "right" spotify)
-        (: cur :focus)))))
+        (cur:focus)))))
 
 (fn play-or-pause []
   (if (spotify-is-running)
@@ -33,7 +33,7 @@
       (hs.spotify.previous)
 
       (match (vlc-is-running)
-        app (: app :selectMenuItem ["Playback" "Previous"]))
+        app (app:selectMenuItem ["Playback" "Previous"]))
 
       (: (hs.eventtap.event.newSystemKeyEvent "PREVIOUS" true) :post)))
 
@@ -42,23 +42,23 @@
       (hs.spotify.next)
 
       (match (vlc-is-running)
-        app (: app :selectMenuItem ["Playback" "Next"]))
+        app (app:selectMenuItem ["Playback" "Next"]))
 
       (: (hs.eventtap.event.newSystemKeyEvent "NEXT" true) :post)))
 
 (fn seek-forward []
   (if (match (vlc-is-running)
-        app (: app :selectMenuItem ["Playback" "Step Forward"]))
+        app (app:selectMenuItem ["Playback" "Step Forward"]))
 
       (match (spotify-is-running)
-        app (: app :selectMenuItem ["Playback" "Seek Forward"]))))
+        app (app:selectMenuItem ["Playback" "Seek Forward"]))))
 
 (fn seek-backward []
   (if (match (vlc-is-running)
-        app (: app :selectMenuItem ["Playback" "Step Backward"]))
+        app (app:selectMenuItem ["Playback" "Step Backward"]))
 
       (match (spotify-is-running)
-        app (: app :selectMenuItem ["Playback" "Seek Backward"]))))
+        app (app:selectMenuItem ["Playback" "Seek Backward"]))))
 
 
 (fn faster []
