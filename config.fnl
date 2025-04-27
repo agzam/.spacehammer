@@ -8,6 +8,7 @@
 (local zoom (require :zoom))
 (local screen (require :screen))
 (local coroutine (require :coroutine))
+(local yabai (require :yabai))
 
 (local {:concat concat
         :logf logf} (require :lib.functional))
@@ -114,41 +115,45 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local window-jumps
-       [{:mods [:cmd]
+       [{:mods []
          :key "hjkl"
          :title "Jump"}
-        {:mods [:cmd]
+        {:mods []
          :key :h
-         :action "windows:jump-window-left"
-         :repeatable true}
-        {:mods [:cmd]
-         :key :j
-         :action "windows:jump-window-above"
-         :repeatable true}
-        {:mods [:cmd]
+         :action #(yabai.jump-window-left)
+         ;; :repeatable true
+         }
+        {:mods []
          :key :k
-         :action "windows:jump-window-below"
-         :repeatable true}
-        {:mods [:cmd]
+         :action #(yabai.jump-window-above)
+         ;; :repeatable true
+         }
+        {:mods []
+         :key :j
+         :action #(yabai.jump-window-below)
+         ;; :repeatable true
+         }
+        {:mods []
          :key :l
-         :action "windows:jump-window-right"
-         :repeatable true}])
+         :action #(yabai.jump-window-right)
+         ;; :repeatable true
+         }])
 
-(local window-halves
+(local window-swaps
        [{:key "hjkl"
-         :title "Halves"}
-        {:key :h
-         :action "windows:resize-half-left"
-         :repeatable true}
-        {:key :j
-         :action "windows:resize-half-bottom"
-         :repeatable true}
-        {:key :k
-         :action "windows:resize-half-top"
-         :repeatable true}
-        {:key :l
-         :action "windows:resize-half-right"
-         :repeatable true}])
+         :title "swaps"}
+        {:mods [:Shift]
+         :key :H
+         :action #(yabai.swap-window-left)}
+        {:mods [:Shift]
+         :key :l
+         :action #(yabai.swap-window-right)}
+        {:mods [:Shift]
+         :key :k
+         :action #(yabai.swap-window-above)}
+        {:mods [:Shift]
+         :key :j
+         :action #(yabai.swap-window-below)}])
 
 (local window-increments
        [{:mods [:alt]
@@ -172,24 +177,24 @@
          :repeatable true}])
 
 (local window-resize
-       [{:mods [:shift]
-         :key "hjkl"
+       [{:mods []
+         :key "[]"
          :title "Resize"}
-        {:mods [:shift]
-         :key :h
-         :action "windows:resize-left"
+        {:mods []
+         :key "["
+         :action #(yabai.resize-left)
+         :repeatable true}
+        {:mods []
+         :key "]"
+         :action #(yabai.resize-right)
          :repeatable true}
         {:mods [:shift]
-         :key :j
-         :action "windows:resize-down"
+         :key "["
+         :action #(yabai.resize-up)
          :repeatable true}
         {:mods [:shift]
-         :key :k
-         :action "windows:resize-up"
-         :repeatable true}
-        {:mods [:shift]
-         :key :l
-         :action "windows:resize-right"
+         :key "]"
+         :action #(yabai.resize-down)
          :repeatable true}])
 
 (local window-move-screens
@@ -220,52 +225,16 @@
           :title "Last Window"
           :action "windows:jump-to-last-window"}]
         window-jumps
-        window-halves
-        window-increments
+        window-swaps
+        ;; window-increments
         window-resize
-        window-move-screens
+        ;; window-move-screens
         [{:key :m
           :title "Maximize"
-          :action "windows:maximize-window-frame"}
-         {:key :c
-          :title "Center"
-          :action "windows:center-window-frame"}
-         {:key :g
-          :title "Grid"
-          :action "windows:show-grid"}
-         {:key :u
-          :title "Undo"
-          :action "windows:undo"}
-         ;; {:key "["
-         ;;  :title "Widen Left"
-         ;;  :action (fn [] (screen.resize-window :left 30))
-         ;;  :repeatable true}
-         ;; {:key "]"
-         ;;  :title "Widen Right"
-         ;;  :action (fn [] (screen.resize-window :right 30))
-         ;;  :repeatable true}
-         {:mods []
-          :key "["
-          :title "Adjust Left"
-          :action (fn [] (screen.adjust-window-size :left))
-          ;; :action (fn [] (screen.resize-window :left -30))
-          :repeatable true}
-         {:mods []
-          :key "]"
-          :title "Adjust Right"
-          :action (fn [] (screen.adjust-window-size :right))
-          :repeatable true}
-         ;; {:mods [:shift]
-         ;;  :key ","
-         ;;  :title "Snap"
-         ;;  :action (fn [] (screen.snap-left-widen))
-         ;;  :repeatable true}
-         ;; {:mods [:shift]
-         ;;  :key "."
-         ;;  :title "Snap"
-         ;;  :action (fn [] (screen.snap-left-narrow))
-         ;;  :repeatable true}
-         ]))
+          :action #(yabai.toggle-maximize)}
+         {:key :f
+          :title "float"
+          :action #(yabai.toggle-float)}]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Apps Menu
