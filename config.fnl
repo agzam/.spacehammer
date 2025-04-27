@@ -120,24 +120,16 @@
          :title "Jump"}
         {:mods []
          :key :h
-         :action #(yabai.jump-window-left)
-         ;; :repeatable true
-         }
+         :action #(yabai.jump-window-left)}
         {:mods []
          :key :k
-         :action #(yabai.jump-window-above)
-         ;; :repeatable true
-         }
+         :action #(yabai.jump-window-above)}
         {:mods []
          :key :j
-         :action #(yabai.jump-window-below)
-         ;; :repeatable true
-         }
+         :action #(yabai.jump-window-below)}
         {:mods []
          :key :l
-         :action #(yabai.jump-window-right)
-         ;; :repeatable true
-         }])
+         :action #(yabai.jump-window-right)}])
 
 (local window-swaps
        [{:key "hjkl"
@@ -223,7 +215,7 @@
         [return
          {:key :w
           :title "Last Window"
-          :action "windows:jump-to-last-window"}]
+          :action #(yabai.jump-window-recent)}]
         window-jumps
         window-swaps
         ;; window-increments
@@ -234,7 +226,25 @@
           :action #(yabai.toggle-maximize)}
          {:key :f
           :title "float"
-          :action #(yabai.toggle-float)}]))
+          :action #(yabai.toggle-float)}
+         {:key :s
+          :title "sticky"
+          :action #(yabai.toggle-sticky)}
+         {:key "="
+          :title "balance"
+          :action #(yabai.balance)}]))
+
+(local spaces-bindings
+       [{:mods [:Shift]
+         :key "."
+         :title "move to next"
+         :action #(yabai.move-to-next-space)}
+        {:mods [:Shift]
+         :key ","
+         :title "move to next"
+         :action #(yabai.move-to-prev-space)}
+        {:key "Tab"
+         :action #(yabai.jump-space-recent)}])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Apps Menu
@@ -360,6 +370,11 @@
          :enter "windows:enter-window-menu"
          :exit "windows:exit-window-menu"
          :items window-bindings}
+        {:key   :l
+         :title "Spaces"
+         :enter "windows:enter-spaces-menu"
+         :exit "windows:exit-spaces-menu"
+         :items spaces-bindings}
         {:key   :a
          :title "Apps"
          :items app-bindings}
@@ -371,7 +386,16 @@
          :items media-bindings}
         {:key   :x
          :title "Emacs"
-         :items emacs-bindings}])
+         :items emacs-bindings}
+        {:key "]"
+         :action #(yabai.space-next)}
+        {:key "["
+         :action #(yabai.space-previous)}
+        {:key "1" :action #(yabai.jump-space 1)}
+        {:key "2" :action #(yabai.jump-space 2)}
+        {:key "3" :action #(yabai.jump-space 3)}
+        {:key "4" :action #(yabai.jump-space 4)}
+        {:key "5" :action #(yabai.jump-space 5)}])
 
 (require :browser)
 (require :language)

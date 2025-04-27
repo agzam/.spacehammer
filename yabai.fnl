@@ -1,7 +1,7 @@
+(local { : count : last : filter : first} (require :lib.functional))
 (local yabai (-> "which yabai"
               (hs.execute true)
               (string.gsub "[\n\r]+" " ")))
-(local {: eq? } (require :lib.functional))
 
 (local log (hs.logger.new :yabai :debug))
 
@@ -33,7 +33,10 @@
 
 (fn last-window? [] (window-first-last :last))
 
-(local resize-coeff 100)
+(local resize-coeff 120)
+
+(fn jump-window-recent []
+  (hs.execute (.. yabai "-m window --focus recent")))
 
 (fn resize-left []
   (let [n resize-coeff
@@ -102,6 +105,45 @@
 (fn toggle-float []
   (hs.execute (.. yabai "-m window --toggle float")))
 
+(fn toggle-sticky []
+  (hs.execute (.. yabai "-m window --toggle sticky")))
+
+(fn balance []
+  (hs.execute (.. yabai "-m space --balance")))
+
+(fn space-next []
+  (let [spcs* (hs.execute (.. yabai "-m query --spaces --display"))
+        spcs (hs.json.decode spcs*)
+        single-space? (-> spcs count (= 1))
+        cur (->> spcs (filter #(-> $1 (. :has-focus))) first)
+        last? (-> (last spcs) (. :index) (= (. cur :index)))]
+    (when single-space?
+      (hs.execute (.. yabai "-m space --create")))
+    (if last?
+        (hs.execute (.. yabai "-m space --focus 1"))
+        (hs.execute (.. yabai "-m space --focus next")))))
+
+(fn space-previous []
+  (let [spcs* (hs.execute (.. yabai "-m query --spaces --display"))
+        spcs (hs.json.decode spcs*)
+        spaces? (->> spcs count (< 1))
+        cur (->> spcs (filter #(-> $1 (. :has-focus))) first)
+        first? (-> (first spcs) (. :index) (= (. cur :index)))]
+    (if (and spaces? first?)
+        (hs.execute (.. yabai "-m space --focus " (count spcs)))
+        (hs.execute (.. yabai "-m space --focus prev")))))
+
+(fn jump-space [idx]
+  (hs.execute (.. yabai "-m space --focus " idx)))
+
+(fn jump-space-recent []
+  (hs.execute (.. yabai "-m space --focus recent")))
+
+(fn move-to-next-space []
+  (hs.execute (.. yabai "-m window --space next --focus")))
+
+(fn move-to-prev-space []
+  (hs.execute (.. yabai "-m window --space prev --focus")))
 
 {
  :jump-window-left #(jump-window :west)
@@ -119,6 +161,18 @@
  : resize-up
  : resize-down
 
+ : jump-window-recent
  : toggle-maximize
  : toggle-float
+ : toggle-sticky
+ : balance
+
+ : space-next
+ : space-previous
+
+ : jump-space
+ : jump-space-recent
+
+ : move-to-next-space
+ : move-to-prev-space
  }
