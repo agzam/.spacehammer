@@ -4,8 +4,9 @@
 (local log (hs.logger.new :yabai :debug))
 
 (fn run [cmd]
-  (hs.execute
-   (.. "export PATH=$PATH:/opt/homebrew/bin && " cmd)))
+  (->
+   (hs.execute (.. "export PATH=$PATH:/opt/homebrew/bin && " cmd))
+   (string.gsub "[\n\r]+" "")))
 
 (fn jump-window [dir]
   (run (.. "yabai -m window --focus " dir " || "
@@ -20,14 +21,13 @@
        "yabai -m window --warp " (if (= dir :east) :first :last)
        ")")))
 
-(fn current-window []
-  (let [w (run "yabai -m query --windows --window")]
-    (hs.json.decode w)))
+(fn current-window [] (-> "yabai -m query --windows --window" (run) (hs.json.decode)))
 
 (fn window-first-last [first-last]
   (let [cur (. (current-window) :id)
-        fl (run (.. "yabai -m query --windows --window " first-last))
-        fl (. (hs.json.decode fl) :id)]
+        fl (-> (.. "yabai -m query --windows --window " first-last) run
+               hs.json.decode
+               (.  :id))]
     (= cur fl)))
 
 (fn first-window? [] (window-first-last :first))
@@ -112,8 +112,7 @@
   (run "yabai -m space --balance"))
 
 (fn space-next []
-  (let [spcs* (run "yabai -m query --spaces --display")
-        spcs (hs.json.decode spcs*)
+  (let [spcs (-> "yabai -m query --spaces --display" run hs.json.decode)
         single-space? (-> spcs count (= 1))
         cur (->> spcs (filter #(-> $1 (. :has-focus))) first)
         last? (-> (last spcs) (. :index) (= (. cur :index)))]
@@ -124,8 +123,7 @@
         (run "yabai -m space --focus next"))))
 
 (fn space-previous []
-  (let [spcs* (run "yabai -m query --spaces --display")
-        spcs (hs.json.decode spcs*)
+  (let [spcs (-> "yabai -m query --spaces --display" run hs.json.decode)
         spaces? (->> spcs count (< 1))
         cur (->> spcs (filter #(-> $1 (. :has-focus))) first)
         first? (-> (first spcs) (. :index) (= (. cur :index)))]
@@ -140,8 +138,7 @@
   (run "yabai -m space --focus recent"))
 
 (fn move-to-next-space []
-  (let [spcs* (run "yabai -m query --spaces --display")
-        spcs (hs.json.decode spcs*)
+  (let [spcs (-> "yabai -m query --spaces --display" run hs.json.decode)
         single-space? (-> spcs count (= 1))]
     (when single-space?
       (run "yabai -m space --create"))
@@ -168,12 +165,14 @@
     (run (.. "yabai -m space --focus " emacs-space))))
 
 (fn move-to-other-screen []
-  (let [disp (run "yabai -m query --displays --display | jq '.index'")
-        disp (tonumber disp)
-        other (case disp
+  (let [other (->
+              (.. "yabai -m query --displays --display | jq '.index'")
+              (run)
+              (tonumber 10)
+              (case
                 ;; I have only two monitors
                 1 2
-                2 1)]
+                2 1))]
     (run (.. "yabai -m window --display " other
              " && yabai -m display --focus " other))))
 
