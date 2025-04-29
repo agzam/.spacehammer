@@ -1,31 +1,32 @@
 (local { : count : last : filter : first} (require :lib.functional))
-(local yabai (-> "which yabai"
-              (hs.execute true)
-              (string.gsub "[\n\r]+" " ")))
+(local emacs (require :emacs))
 
 (local log (hs.logger.new :yabai :debug))
 
-(fn jump-window [dir]
+(fn run [cmd]
   (hs.execute
-   (.. yabai "-m window --focus " dir " || "
-       yabai "-m display --focus " dir)))
+   (.. "export PATH=$PATH:/opt/homebrew/bin && " cmd)))
+
+(fn jump-window [dir]
+  (run (.. "yabai -m window --focus " dir " || "
+           "yabai -m display --focus " dir)))
 
 (fn swap-window [dir]
-  (hs.execute
-   (.. yabai " -m window --swap " dir
+  (run
+   (.. "yabai -m window --swap " dir
        " || ("
-       yabai " -m window --display " dir " && "
-       yabai " -m display --focus " dir " && "
-       yabai " -m window --warp " (if (= dir :east) :first :last)
+       "yabai -m window --display " dir " && "
+       "yabai -m display --focus " dir " && "
+       "yabai -m window --warp " (if (= dir :east) :first :last)
        ")")))
 
 (fn current-window []
-  (let [w (-> yabai (.. "-m query --windows --window") hs.execute)]
+  (let [w (run "yabai -m query --windows --window")]
     (hs.json.decode w)))
 
 (fn window-first-last [first-last]
   (let [cur (. (current-window) :id)
-        fl (-> yabai (.. "-m query --windows --window " first-last) hs.execute)
+        fl (run (.. "yabai -m query --windows --window " first-last))
         fl (. (hs.json.decode fl) :id)]
     (= cur fl)))
 
@@ -36,7 +37,7 @@
 (local resize-coeff 120)
 
 (fn jump-window-recent []
-  (hs.execute (.. yabai "-m window --focus recent")))
+  (run "yabai -m window --focus recent"))
 
 (fn resize-left []
   (let [n resize-coeff
@@ -52,9 +53,8 @@
                  (where [_ _ "vertical" "first_child"]) "right:-%s:%s"
                  (where [_ _ "vertical" "second_child"]) "left:-%s:%s"
                  (where [_ _ "horizontal"]) "right:-%s:%s")]
-    (hs.alert params)
-    (hs.execute (.. yabai "-m window --resize "
-                    (string.format params n n)))))
+    (run (.. "yabai -m window --resize "
+             (string.format params n n)))))
 
 (fn resize-right []
   (let [n resize-coeff
@@ -70,8 +70,8 @@
                  (where [_ _ "vertical" "first_child"]) "right:%s:%s"
                  (where [_ _ "vertical" "second_child"]) "left:%s:-%s"
                  (where [_ _ "horizontal"]) "left:%s:-%s")]
-    (hs.execute (.. yabai "-m window --resize "
-                    (string.format params n n)))))
+    (run (.. "yabai -m window --resize "
+             (string.format params n n)))))
 
 (fn resize-up []
   (let [n resize-coeff
@@ -83,8 +83,8 @@
                  (where [_ l _] l) "top:%s:-%s"
                  (where [_ _ "vertical"]) "top:%s:-%s"
                  (where [_ _ "horizontal"]) "top:%s:-%s")]
-    (hs.execute (.. yabai "-m window --resize "
-                    (string.format params n n)))))
+    (run (.. "yabai -m window --resize "
+             (string.format params n n)))))
 
 (fn resize-down []
   (let [n resize-coeff
@@ -96,54 +96,86 @@
                  (where [_ l _] l) "top:-%s:%s"
                  (where [_ _ "vertical"]) "bottom:%s:%s"
                  (where [_ _ "horizontal"]) "bottom:-%s:%s")]
-    (hs.execute (.. yabai "-m window --resize "
-                    (string.format params n n)))))
+    (run (.. "yabai -m window --resize "
+             (string.format params n n)))))
 
 (fn toggle-maximize []
-  (hs.execute (.. yabai "-m window --toggle zoom-fullscreen")))
+  (run (.. "yabai -m window --toggle zoom-fullscreen")))
 
 (fn toggle-float []
-  (hs.execute (.. yabai "-m window --toggle float")))
+  (run (.. "yabai -m window --toggle float")))
 
 (fn toggle-sticky []
-  (hs.execute (.. yabai "-m window --toggle sticky")))
+  (run "yabai -m window --toggle sticky"))
 
 (fn balance []
-  (hs.execute (.. yabai "-m space --balance")))
+  (run "yabai -m space --balance"))
 
 (fn space-next []
-  (let [spcs* (hs.execute (.. yabai "-m query --spaces --display"))
+  (let [spcs* (run "yabai -m query --spaces --display")
         spcs (hs.json.decode spcs*)
         single-space? (-> spcs count (= 1))
         cur (->> spcs (filter #(-> $1 (. :has-focus))) first)
         last? (-> (last spcs) (. :index) (= (. cur :index)))]
     (when single-space?
-      (hs.execute (.. yabai "-m space --create")))
+      (run "yabai -m space --create"))
     (if last?
-        (hs.execute (.. yabai "-m space --focus 1"))
-        (hs.execute (.. yabai "-m space --focus next")))))
+        (run "yabai -m space --focus 1")
+        (run "yabai -m space --focus next"))))
 
 (fn space-previous []
-  (let [spcs* (hs.execute (.. yabai "-m query --spaces --display"))
+  (let [spcs* (run "yabai -m query --spaces --display")
         spcs (hs.json.decode spcs*)
         spaces? (->> spcs count (< 1))
         cur (->> spcs (filter #(-> $1 (. :has-focus))) first)
         first? (-> (first spcs) (. :index) (= (. cur :index)))]
     (if (and spaces? first?)
-        (hs.execute (.. yabai "-m space --focus " (count spcs)))
-        (hs.execute (.. yabai "-m space --focus prev")))))
+        (run (.. "yabai -m space --focus " (count spcs)))
+        (run (.. "yabai -m space --focus prev")))))
 
 (fn jump-space [idx]
-  (hs.execute (.. yabai "-m space --focus " idx)))
+  (run (.. "yabai -m space --focus " idx)))
 
 (fn jump-space-recent []
-  (hs.execute (.. yabai "-m space --focus recent")))
+  (run "yabai -m space --focus recent"))
 
 (fn move-to-next-space []
-  (hs.execute (.. yabai "-m window --space next --focus")))
+  (let [spcs* (run "yabai -m query --spaces --display")
+        spcs (hs.json.decode spcs*)
+        single-space? (-> spcs count (= 1))]
+    (when single-space?
+      (run "yabai -m space --create"))
+    (run "yabai -m window --space next")))
 
 (fn move-to-prev-space []
-  (hs.execute (.. yabai "-m window --space prev --focus")))
+  (run "yabai -m window --space prev --focus"))
+
+(fn activate-app [app-name]
+  (let [id (-> (.. "yabai -m query --windows | jq '.[] | "
+                   "select(.app==\"" app-name "\") | .id' | head -n1")
+               run
+               (string.gsub "[\n\r]+" ""))
+        blank? #(or (= $1 nil) (= $1 ""))]
+    (if (blank? id)
+        (hs.application.launchOrFocus app-name)
+        (run (.. "yabai -m window --focus " id)))))
+
+(fn edit-with-emacs []
+  (let [emacs-space
+        (run (.. "yabai -m query --windows "
+                 "| jq -r \".[] | select(.app==\\\"Emacs\\\") | .space\""))]
+    (emacs.edit-with-emacs)
+    (run (.. "yabai -m space --focus " emacs-space))))
+
+(fn move-to-other-screen []
+  (let [disp (run "yabai -m query --displays --display | jq '.index'")
+        disp (tonumber disp)
+        other (case disp
+                ;; I have only two monitors
+                1 2
+                2 1)]
+    (run (.. "yabai -m window --display " other
+             " && yabai -m display --focus " other))))
 
 {
  :jump-window-left #(jump-window :west)
@@ -175,4 +207,9 @@
 
  : move-to-next-space
  : move-to-prev-space
+
+ : activate-app
+ : edit-with-emacs
+
+ : move-to-other-screen
  }

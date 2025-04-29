@@ -91,7 +91,7 @@
   (launch-emacs)
   "
   (fn activate []
-    (windows.activate-app app-name)))
+    (yabai.activate-app app-name)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -189,27 +189,6 @@
          :action #(yabai.resize-down)
          :repeatable true}])
 
-(local window-move-screens
-       [{:key "n, p"
-         :title "Move next\\previous screen"}
-        {:mods [:shift]
-         :key "n, p"
-         :title "Move up\\down screens"}
-        {:key :n
-         :action "windows:move-south"
-         :repeatable true}
-        {:key :p
-         :action "windows:move-north"
-         :repeatable true}
-        {:mods [:shift]
-         :key :n
-         :action "windows:move-west"
-         :repeatable true}
-        {:mods [:shift]
-         :key :p
-         :action "windows:move-east"
-         :repeatable true}])
-
 (local window-bindings
        (concat
         [return
@@ -220,8 +199,9 @@
         window-swaps
         ;; window-increments
         window-resize
-        ;; window-move-screens
-        [{:key :m
+        [{:key "o"
+          :action #(yabai.move-to-other-screen)}
+         {:key :m
           :title "Maximize"
           :action #(yabai.toggle-maximize)}
          {:key :f
@@ -241,8 +221,14 @@
          :action #(yabai.move-to-next-space)}
         {:mods [:Shift]
          :key ","
-         :title "move to next"
+         :title "move to prev"
          :action #(yabai.move-to-prev-space)}
+        {:key "j"
+         :title "prev space"
+         :action #(yabai.space-previous)}
+        {:key "k"
+         :title "next space"
+         :action #(yabai.space-next)}
         {:key "Tab"
          :action #(yabai.jump-space-recent)}])
 
@@ -286,7 +272,7 @@
          :action (activator "Emacs")}
         {:key :b
          :title "Browser"
-         :action (activator "brave browser")}
+         :action (activator "Brave Browser")}
         ;; {:key :f
         ;;  :title "Firefox"
         ;;  :action (activator "Firefox")}
@@ -302,12 +288,15 @@
         {:key :m
          :title music-app
          :action (activator music-app)}
+        {:key    :j
+         :title  "Jump"
+         :action #(windows.jump)}
         ;; {:key :d
         ;;  :title "Discord"
         ;;  :action (activator "Discord")}
         {:key :z
          :title "Zoom"
-         :action (activator "Zoom")}])
+         :action (activator "zoom.us")}])
 
 (require :yt-music)
 
@@ -367,8 +356,8 @@
          :action (activator "Alfred 5")}
         {:key   :w
          :title "Window"
-         :enter "windows:enter-window-menu"
-         :exit "windows:exit-window-menu"
+         ;; :enter "windows:enter-window-menu"
+         ;; :exit "windows:exit-window-menu"
          :items window-bindings}
         {:key   :l
          :title "Spaces"
@@ -378,9 +367,7 @@
         {:key   :a
          :title "Apps"
          :items app-bindings}
-        {:key    :j
-         :title  "Jump"
-         :action "windows:jump"}
+
         {:key   :m
          :title "Media"
          :items media-bindings}
@@ -415,7 +402,7 @@
          :action hs.toggleConsole}
         {:mods [:cmd :ctrl]
          :key :o
-         :action "emacs:edit-with-emacs"}
+         :action #(yabai.edit-with-emacs)}
         {:mods [:cmd :shift]
          :key :c
          :action "browser:inspect-elements"}
@@ -594,8 +581,8 @@
        {:title "Main Menu"
         :items menu-items
         :keys  common-keys
-        :enter (fn [] (windows.hide-display-numbers))
-        :exit  (fn [] (windows.hide-display-numbers))
+        ;; :enter (fn [] (windows.hide-display-numbers))
+        ;; :exit  (fn [] (windows.hide-display-numbers))
         :apps  apps
         :hyper {:key :F18}
         :modules {:windows {:center-ratio "30:60"}}
