@@ -21,13 +21,14 @@
        "yabai -m window --warp " (if (= dir :east) :first :last)
        ")")))
 
-(fn current-window [] (-> "yabai -m query --windows --window" (run) (hs.json.decode)))
+(fn current-window []
+  (let [w (run "yabai -m query --windows --window")]
+    (hs.json.decode w)))
 
 (fn window-first-last [first-last]
   (let [cur (. (current-window) :id)
-        fl (-> (.. "yabai -m query --windows --window " first-last) run
-               hs.json.decode
-               (.  :id))]
+        fl (run (.. "yabai -m query --windows --window " first-last))
+        fl (-> fl (hs.json.decode) (.  :id))]
     (= cur fl)))
 
 (fn first-window? [] (window-first-last :first))
@@ -102,6 +103,9 @@
 (fn toggle-maximize []
   (run (.. "yabai -m window --toggle zoom-fullscreen")))
 
+(fn minimize []
+  (run (.. "yabai -m window --minimize")))
+
 (fn toggle-float []
   (run (.. "yabai -m window --toggle float")))
 
@@ -112,7 +116,8 @@
   (run "yabai -m space --balance"))
 
 (fn space-next []
-  (let [spcs (-> "yabai -m query --spaces --display" run hs.json.decode)
+  (let [spcs* (run "yabai -m query --spaces --display")
+        spcs (hs.json.decode spcs*)
         single-space? (-> spcs count (= 1))
         cur (->> spcs (filter #(-> $1 (. :has-focus))) first)
         last? (-> (last spcs) (. :index) (= (. cur :index)))]
@@ -123,7 +128,8 @@
         (run "yabai -m space --focus next"))))
 
 (fn space-previous []
-  (let [spcs (-> "yabai -m query --spaces --display" run hs.json.decode)
+  (let [spcs* (run "yabai -m query --spaces --display")
+        spcs (hs.json.decode spcs*)
         spaces? (->> spcs count (< 1))
         cur (->> spcs (filter #(-> $1 (. :has-focus))) first)
         first? (-> (first spcs) (. :index) (= (. cur :index)))]
@@ -138,7 +144,8 @@
   (run "yabai -m space --focus recent"))
 
 (fn move-to-next-space []
-  (let [spcs (-> "yabai -m query --spaces --display" run hs.json.decode)
+  (let [spcs* (run "yabai -m query --spaces --display")
+        spcs (hs.json.decode spcs*)
         single-space? (-> spcs count (= 1))]
     (when single-space?
       (run "yabai -m space --create"))
@@ -176,6 +183,8 @@
     (run (.. "yabai -m window --display " other
              " && yabai -m display --focus " other))))
 
+
+
 {
  :jump-window-left #(jump-window :west)
  :jump-window-right #(jump-window :east)
@@ -194,6 +203,7 @@
 
  : jump-window-recent
  : toggle-maximize
+ : minimize
  : toggle-float
  : toggle-sticky
  : balance

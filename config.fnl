@@ -204,6 +204,9 @@
          {:key :m
           :title "Maximize"
           :action #(yabai.toggle-maximize)}
+         {:key "-"
+          :title "Minimize"
+          :action #(yabai.minimize)}
          {:key :f
           :title "float"
           :action #(yabai.toggle-float)}
