@@ -6,7 +6,8 @@
 (fn run [cmd]
   (->
    (hs.execute (.. "export PATH=$PATH:/opt/homebrew/bin && " cmd))
-   (string.gsub "[\n\r]+" "")))
+   (string.gsub "[\n\r]+$" "")
+   (string.gsub "^%*(.-)%s*$" "%1")))
 
 (fn jump-window [dir]
   (run (.. "yabai -m window --focus " dir " || "
@@ -23,13 +24,42 @@
 
 (fn current-window []
   (let [w (run "yabai -m query --windows --window")]
-    (hs.json.decode w)))
+    (when (not (or (= w nil)
+                   (= w "")))
+      (hs.json.decode w))))
+
+(fn current-space []
+  (let [s (run "yabai -m query --spaces --space")]
+    (hs.json.decode s)))
 
 (fn window-first-last [first-last]
-  (let [cur (. (current-window) :id)
-        fl (run (.. "yabai -m query --windows --window " first-last))
-        fl (-> fl (hs.json.decode) (.  :id))]
-    (= cur fl)))
+  (let [cw (current-window)]
+    (when cw
+      (let [cur (. cw :id)
+            fl (run (.. "yabai -m query --windows --window " first-last))
+            fl (-> fl (hs.json.decode) (.  :id))]
+        (= cur fl)))))
+
+(fn space-first-last [first-last]
+  (let [cs (current-space)]
+    (when cs
+      (let [display-idx (run "yabai -m query --displays --display | jq '.index'")
+            cur (. cs :id)
+            spc-idx (case first-last :first 0 :last -1)
+            fl (run (string.format
+                     "yabai -m query --spaces | jq '[.[] | select(.display == %s)] | .[%s]'"
+                     display-idx spc-idx))
+            fl (-> fl (hs.json.decode) (.  :id))]
+        (= cur fl)))))
+
+(fn display-first-last [first-last]
+  (let [cd (-?> (run "yabai -m query --displays --display")
+                hs.json.decode)]
+    (when cd
+      (let [cur (. cd :id)
+            fl (run (.. "yabai -m query --displays --display " first-last))
+            fl (-> fl (hs.json.decode) (.  :id))]
+        (= cur fl)))))
 
 (fn first-window? [] (window-first-last :first))
 
@@ -115,27 +145,31 @@
 (fn balance []
   (run "yabai -m space --balance"))
 
+(tset table :index-of
+  (fn [tbl value]
+    (var idx nil)
+    (each [i v (ipairs tbl)]
+      (when (= v value)
+        (set idx i)))
+    idx))
+
 (fn space-next []
-  (let [spcs* (run "yabai -m query --spaces --display")
-        spcs (hs.json.decode spcs*)
-        single-space? (-> spcs count (= 1))
-        cur (->> spcs (filter #(-> $1 (. :has-focus))) first)
-        last? (-> (last spcs) (. :index) (= (. cur :index)))]
-    (when single-space?
-      (run "yabai -m space --create"))
-    (if last?
-        (run "yabai -m space --focus 1")
-        (run "yabai -m space --focus next"))))
+  ;; Unlike yabai method, this doesn't require scripting addition enabled.
+  (let [spaces (hs.spaces.spacesForScreen)
+        current-space (hs.spaces.focusedSpace)
+        current-idx (table.index-of spaces current-space)
+        next-idx (if (= current-idx (length spaces)) 1 (+ current-idx 1))
+        next-space (. spaces next-idx)]
+    (hs.spaces.gotoSpace next-space)))
 
 (fn space-previous []
-  (let [spcs* (run "yabai -m query --spaces --display")
-        spcs (hs.json.decode spcs*)
-        spaces? (->> spcs count (< 1))
-        cur (->> spcs (filter #(-> $1 (. :has-focus))) first)
-        first? (-> (first spcs) (. :index) (= (. cur :index)))]
-    (if (and spaces? first?)
-        (run (.. "yabai -m space --focus " (count spcs)))
-        (run (.. "yabai -m space --focus prev")))))
+  ;; Unlike yabai method, this doesn't require scripting addition enabled.
+  (let [spaces (hs.spaces.spacesForScreen)
+        current-space (hs.spaces.focusedSpace)
+        current-idx (table.index-of spaces current-space)
+        prev-idx (if (= current-idx 1) (length spaces) (- current-idx 1))
+        prev-space (. spaces prev-idx)]
+    (hs.spaces.gotoSpace prev-space)))
 
 (fn jump-space [idx]
   (run (.. "yabai -m space --focus " idx)))
@@ -156,7 +190,7 @@
 
 (fn activate-app [app-name]
   (let [id (-> (.. "yabai -m query --windows | jq '.[] | "
-                   "select(.app==\"" app-name "\") | .id' | head -n1")
+                   "select(.app==\"" app-name "\") | .id' | tail -n1")
                run
                (string.gsub "[\n\r]+" ""))
         blank? #(or (= $1 nil) (= $1 ""))]
@@ -172,14 +206,7 @@
     (run (.. "yabai -m space --focus " emacs-space))))
 
 (fn move-to-other-screen []
-  (let [other (->
-              (.. "yabai -m query --displays --display | jq '.index'")
-              (run)
-              (tonumber 10)
-              (case
-                ;; I have only two monitors
-                1 2
-                2 1))]
+  (let [other (other-screen-idx)]
     (run (.. "yabai -m window --display " other
              " && yabai -m display --focus " other))))
 

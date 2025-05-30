@@ -226,10 +226,10 @@
          :key ","
          :title "move to prev"
          :action #(yabai.move-to-prev-space)}
-        {:key "j"
+        {:key "k"
          :title "prev space"
          :action #(yabai.space-previous)}
-        {:key "k"
+        {:key "j"
          :title "next space"
          :action #(yabai.space-next)}
         {:key "Tab"
