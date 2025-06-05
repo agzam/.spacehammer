@@ -1,5 +1,25 @@
 (require-macros :lib.macros)
 
+(local { : run } (require :yabai))
+
+(fn group-zoom-windows []
+  (let [output (run "yabai -m query --windows | jq '[.[] | select(.app==\"zoom.us\")]'")
+        windows (hs.json.decode output)
+        main-window (accumulate [found nil
+                                 _ w (ipairs windows)]
+                      (if (= w.title "Zoom Meeting") w found))
+        other-windows (icollect [_ w (ipairs windows)]
+                        (when (not= w.id main-window.id) w))]
+
+    (when main-window
+      ;; First, focus on the main window's space
+      (run (.. "yabai -m window --focus " main-window.id))
+
+      ;; Place windows to the right of main window
+      (each [_ w (ipairs other-windows)]
+        (run (.. "yabai -m window " main-window.id " --insert east"))
+        (run (.. "yabai -m window " w.id " --warp " main-window.id))))))
+
 (hs.hotkey.bind
  [:cmd :shift :option :ctrl] "m"
  (fn []
@@ -42,3 +62,6 @@
          (do
            (zoom:selectMenuItem mi)
            (hs.alert "🎢 Zoom now on top! 🎢"))))))
+
+
+{: group-zoom-windows}

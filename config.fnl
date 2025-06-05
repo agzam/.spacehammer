@@ -349,6 +349,14 @@
          :title "Full Screen"
          :action "emacs:full-screen"}])
 
+
+(local zoom (require :zoom))
+(local zoom-bindings
+       [return
+        {:key :g
+         :title "group windows"
+         :action zoom.group-zoom-windows}])
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Main Menu & Config
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -377,6 +385,9 @@
         {:key   :x
          :title "Emacs"
          :items emacs-bindings}
+        {:key   :z
+         :title "Zoom"
+         :items zoom-bindings}
         {:key "]"
          :action #(yabai.space-next)}
         {:key "["
