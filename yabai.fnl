@@ -1,7 +1,8 @@
-(local { : count : last : filter : first} (require :lib.functional))
+(local { : count : last : filter : first : find : contains? : seq?} (require :lib.functional))
 (local emacs (require :emacs))
 
 (local log (hs.logger.new :yabai :debug))
+(local locked-windows {})
 
 (fn run [cmd]
   (->
@@ -62,8 +63,11 @@
         (= cur fl)))))
 
 (fn first-window? [] (window-first-last :first))
-
 (fn last-window? [] (window-first-last :last))
+(fn first-space? [] (space-first-last :first))
+(fn last-space? [] (space-first-last :last))
+(fn first-display? [] (display-first-last :first))
+(fn last-display? [] (display-first-last :last))
 
 (local resize-coeff 120)
 
@@ -71,38 +75,40 @@
   (run "yabai -m window --focus recent"))
 
 (fn resize-left []
-  (let [n resize-coeff
-        cw  (current-window)
-        split-type (. cw :split-type)
-        split-child (. cw :split-child)
-        params (match [(first-window?)
-                       (last-window?)
-                       split-type
-                       split-child]
-                 (where [f] f) "right:-%s:%s"
-                 (where [_ l _] l) "left:-%s:%s"
-                 (where [_ _ "vertical" "first_child"]) "right:-%s:%s"
-                 (where [_ _ "vertical" "second_child"]) "left:-%s:%s"
-                 (where [_ _ "horizontal"]) "right:-%s:%s")]
-    (run (.. "yabai -m window --resize "
-             (string.format params n n)))))
+  (let [cw  (current-window)]
+   (when cw
+     (let [n resize-coeff
+           split-type (. cw :split-type)
+           split-child (. cw :split-child)
+           params (match [(first-window?)
+                          (last-window?)
+                          split-type
+                          split-child]
+                    (where [f] f) "right:-%s:%s"
+                    (where [_ l _] l) "left:-%s:%s"
+                    (where [_ _ "vertical" "first_child"]) "right:-%s:%s"
+                    (where [_ _ "vertical" "second_child"]) "left:-%s:%s"
+                    (where [_ _ "horizontal"]) "right:-%s:%s")]
+       (run (.. "yabai -m window --resize "
+                (string.format params n n)))))))
 
 (fn resize-right []
-  (let [n resize-coeff
-        cw  (current-window)
-        split-type (. cw :split-type)
-        split-child (. cw :split-child)
-        params (match [(first-window?)
-                       (last-window?)
-                       split-type
-                       split-child]
-                 (where [f] f) "right:%s:%s"
-                 (where [_ l _] l) "left:%s:%s"
-                 (where [_ _ "vertical" "first_child"]) "right:%s:%s"
-                 (where [_ _ "vertical" "second_child"]) "left:%s:-%s"
-                 (where [_ _ "horizontal"]) "left:%s:-%s")]
-    (run (.. "yabai -m window --resize "
-             (string.format params n n)))))
+  (let [cw (current-window)]
+    (when cw
+      (let [n resize-coeff
+            split-type (. cw :split-type)
+            split-child (. cw :split-child)
+            params (match [(first-window?)
+                           (last-window?)
+                           split-type
+                           split-child]
+                     (where [f] f) "right:%s:%s"
+                     (where [_ l _] l) "left:%s:%s"
+                     (where [_ _ "vertical" "first_child"]) "right:%s:%s"
+                     (where [_ _ "vertical" "second_child"]) "left:%s:-%s"
+                     (where [_ _ "horizontal"]) "left:%s:-%s")]
+        (run (.. "yabai -m window --resize "
+                 (string.format params n n)))))))
 
 (fn resize-up []
   (let [n resize-coeff
@@ -171,22 +177,44 @@
         prev-space (. spaces prev-idx)]
     (hs.spaces.gotoSpace prev-space)))
 
-(fn jump-space [idx]
+(fn jump-to-space [idx]
   (run (.. "yabai -m space --focus " idx)))
 
 (fn jump-space-recent []
   (run "yabai -m space --focus recent"))
 
-(fn move-to-next-space []
-  (let [spcs* (run "yabai -m query --spaces --display")
-        spcs (hs.json.decode spcs*)
-        single-space? (-> spcs count (= 1))]
-    (when single-space?
-      (run "yabai -m space --create"))
-    (run "yabai -m window --space next")))
+(fn try-move-window-adjacent-space [direction]
+  (let [cmd (.. "yabai -m window --space " direction " --focus 2>&1")
+        error-msg (.. "could not locate the " direction " space")
+        result (run cmd)]
+    (when (not (result:find error-msg)) result)))
+
+(fn move-window-adjacent-space-with-fallback [primary-dir fallback-dir]
+  (or (try-move-window-adjacent-space primary-dir)
+      (try-move-window-adjacent-space fallback-dir)
+      (do
+        (run "yabai -m space --create")
+        (try-move-window-adjacent-space primary-dir))))
 
 (fn move-to-prev-space []
-  (run "yabai -m window --space prev --focus"))
+  (move-window-adjacent-space-with-fallback "prev" "next"))
+
+(fn move-to-next-space []
+  (move-window-adjacent-space-with-fallback "next" "prev"))
+
+(fn move-to-space [target-space]
+  (let [cmd (.. "yabai -m window --space " target-space " --focus 2>&1")
+        result (run cmd)]
+
+    (if (not (result:find "could not locate space"))
+        result
+        (do
+          ;; Space doesn't exist, create one more and try again
+          (run "yabai -m space --create")
+          (run cmd)))))
+
+(fn remove-space []
+  (run "yabai -m space --destroy 2>&1"))
 
 (fn activate-app [app-name]
   (let [id (-> (.. "yabai -m query --windows | jq '.[] | "
@@ -205,14 +233,171 @@
     (emacs.edit-with-emacs)
     (run (.. "yabai -m space --focus " emacs-space))))
 
+(fn other-screen-idx []
+  (->
+   (.. "yabai -m query --displays --display | jq '.index'")
+   (run)
+   (tonumber 10)
+   (case
+       ;; I have only two monitors
+       1 2
+       2 1)))
+
 (fn move-to-other-screen []
   (let [other (other-screen-idx)]
     (run (.. "yabai -m window --display " other
              " && yabai -m display --focus " other))))
 
+(fn space-visible-windows []
+  (let [spc-wins (run "yabai -m query --spaces --space | jq '.windows'")
+        spc-wins (hs.json.decode spc-wins)
+        visible (run "yabai -m query --windows | jq '[.[] | select(.\"is-visible\" == true)]'")
+        visible (hs.json.decode visible)]
+    (if (seq? spc-wins)
+        (->> visible
+             (filter #(-> $1 (. :id) (contains? spc-wins))))
+        [])))
 
+(fn next-window []
+  (let [no-windows? #(-> (space-visible-windows) (count) (< 1))]
+    (match [(last-window?)
+            (last-space?)
+            (last-display?)]
 
-{
+      (where [true false true])
+      (do
+        (hs.alert "last window, left display - next screen")
+        (run (.. "yabai -m display --focus " (other-screen-idx))))
+
+      (where [true true false])
+      (do
+        (hs.alert "last window, last space, right display - next screen, last space")
+        (run (.. "yabai -m display --focus " (other-screen-idx)))
+        (run "yabai -m space --focus last")
+        (when (no-windows?)
+          (run "yabai -m space --focus prev"))
+        )
+
+      (where [true false false])
+      (do
+        (hs.alert "last window, on the right display")
+        (run "yabai -m space --focus next"))
+
+      (where [true true true])
+      (do
+        (hs.alert "last window, last space, on the left display")
+        (run "yabai -m space --focus prev"))
+
+      (where [false _ _])
+      (run "yabai -m window --focus next")
+
+      ;; (where [_ true true])
+      ;; (do
+      ;;   (hs.alert "last window, last space")
+      ;;   (run "yabai -m space --focus first"))
+      ;; (where [_ true _])
+      ;; (do
+      ;;   (hs.alert "last window, not last space")
+      ;;   )
+      ;; (where [_ _ _])
+      ;; (do
+      ;;   (hs.alert "there are windows, this is not last, and not a last space either")
+      ;;   (run "yabai -m window --focus next"))
+      )))
+
+(fn prev-window []
+  (run (.. "yabai -m window --focus prev")))
+
+;; There's no built-in yabai feature that allows you lock given window
+;; dimensions. Yet we can mark windows as 'locked' and then resize
+;; them to whatever size they want to be through the dedicated signal
+;;
+;; Important, in order for this to work, yabairc should contain the following line:
+;;
+;; yabai -m signal --add event=window_resized action="hs -c 'local yb=require(\"yabai\") yb[\"redraw-locked-window-sizes\"]()'"
+(fn toggle-lock-window-sizing []
+  (let [cw (hs.window.focusedWindow)
+        cw-id (: cw :id)
+        locked? (-> locked-windows (. cw-id))
+        space-win-ids (-> (current-space) (. :windows))]
+    (if locked?
+        (do
+          (tset locked-windows cw-id nil)
+          (hs.alert (.. "🔓 Unlocking " (. cw :app) " window")))
+        (do
+          ;; only one window per space can be locked
+          (each [_ k (ipairs space-win-ids)]
+            (tset locked-windows k nil))
+          (tset locked-windows cw-id (. cw :frame))
+          (hs.alert (.. "🔐 Lock " (. cw :app) " window"))))))
+
+;; (fn generate-resize-params [window-id current-frame previous-frame]
+;;   "Generate yabai resize parameters to restore window to previous size.
+;;    Takes window ID, current frame table {x y w h}, and previous frame table {x y w h}."
+;;   (let [width-delta (- previous-frame.w current-frame.w)
+;;         height-delta (- previous-frame.h current-frame.h)
+;;         width-direction (if (> width-delta 0) "right" "left")
+;;         height-direction (if (> height-delta 0) "bottom" "top")
+;;         width-amount (math.abs width-delta)
+;;         height-amount (math.abs height-delta)
+;;         commands []]
+
+;;     ;; Add width resize command if needed
+;;     (when (not= width-delta 0)
+;;       (table.insert commands
+;;         (string.format "yabai -m window %s --resize %s:%d:0"
+;;                       window-id
+;;                       width-direction
+;;                       width-amount)))
+
+;;     ;; Add height resize command if needed
+;;     (when (not= height-delta 0)
+;;       (table.insert commands
+;;         (string.format "yabai -m window %s --resize %s:0:%d"
+;;                       window-id
+;;                       height-direction
+;;                       height-amount)))
+
+;;     ;; Return commands joined with " && " if multiple commands
+;;     (table.concat commands " && ")))
+
+;; (local watcher hs.window.filter.default)
+;; (var last-redraw-locked-time 0)
+
+;; (watcher:subscribe
+;;  hs.window.filter.windowMoved
+;;  (fn [win app event]
+;;    (log.d "🦋")
+;;    (log.d (hs.inspect (win:id)))
+;;    (log.d (hs.inspect locked-windows))
+;;    (let [now (hs.timer.localTime)]
+;;      (when (< 1 (- now last-redraw-locked-time))
+;;        (set last-redraw-locked-time now)
+;;        (let [w (collect [k v (pairs locked-windows)]
+;;                  (when (= k (win:id)) (values k v)))
+;;              id (next w) p (. w id)]
+
+;;          (log.d (hs.inspect w))
+;;          (when id
+;;            (let [c (run (.. "yabai -m query --windows --window " id))
+;;                  c (-> c hs.json.decode (. :frame))
+;;                  width-delta (- p.w c.w)
+;;                  height-delta (- p.h c.h)
+;;                  width-dir (if (< 0 width-delta) :right :left)
+;;                  height-dir (if (< 0 height-delta) :bottom :top)
+;;                  width-amount (math.abs width-delta)
+;;                  height-amount (math.abs height-delta)]
+;;              (when (not= width-delta 0)
+;;                (run (string.format
+;;                      "yabai -m window %s --resize %s:%d:0"
+;;                      id width-dir width-amount)))
+;;              (when (not= height-delta 0)
+;;                (run (string.format
+;;                      "yabai -m window %s --resize %s:%d:0"
+;;                      id height-dir height-amount))))))))))
+
+{: run
+
  :jump-window-left #(jump-window :west)
  :jump-window-right #(jump-window :east)
  :jump-window-above #(jump-window :north)
@@ -238,14 +423,21 @@
  : space-next
  : space-previous
 
- : jump-space
+ : jump-to-space
  : jump-space-recent
 
+ : move-to-space
  : move-to-next-space
  : move-to-prev-space
+ : remove-space
 
  : activate-app
  : edit-with-emacs
 
  : move-to-other-screen
+
+ : next-window
+ : prev-window
+
+ : toggle-lock-window-sizing
  }

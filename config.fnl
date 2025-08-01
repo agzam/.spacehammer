@@ -3,7 +3,7 @@
 (local windows (require :windows))
 (local emacs (require :emacs))
 (local slack (require :slack))
-(local vim (require :vim))
+;; (local vim (require :vim))
 (local multimedia (require :multimedia))
 (local zoom (require :zoom))
 (local screen (require :screen))
@@ -213,27 +213,45 @@
          {:key :s
           :title "sticky"
           :action #(yabai.toggle-sticky)}
-         {:key "="
+         {:key "b"
           :title "balance"
-          :action #(yabai.balance)}]))
+          :action #(yabai.balance)}
+         {:key "p"
+          :title "prev"
+          :action #(yabai.prev-window)}
+         {:key "n"
+          :title "next"
+          :action #(yabai.next-window)}
+         {:key "1"
+          :mods [:shift]
+          :title "! - lock re-sizing"
+          :action #(yabai.toggle-lock-window-sizing)}]))
 
 (local spaces-bindings
-       [{:mods [:Shift]
-         :key "."
-         :title "move to next"
-         :action #(yabai.move-to-next-space)}
-        {:mods [:Shift]
-         :key ","
-         :title "move to prev"
-         :action #(yabai.move-to-prev-space)}
-        {:key "k"
-         :title "prev space"
-         :action #(yabai.space-previous)}
-        {:key "j"
-         :title "next space"
-         :action #(yabai.space-next)}
-        {:key "Tab"
-         :action #(yabai.jump-space-recent)}])
+       (concat
+        (fcollect [i 1 10]
+          (let [key (if (= i 10) "0" (tostring i))]
+            {:key key
+             :action #(yabai.move-to-space i)}))
+        [{:mods [:Shift]
+          :key "."
+          :title "move to next"
+          :action #(yabai.move-to-next-space)}
+         {:mods [:Shift]
+          :key ","
+          :title "move to prev"
+          :action #(yabai.move-to-prev-space)}
+         {:key "k"
+          :title "prev space"
+          :action #(yabai.space-previous)}
+         {:key "j"
+          :title "next space"
+          :action #(yabai.space-next)}
+         {:key "d"
+          :title "remove space"
+          :action #(yabai.remove-space)}
+         {:key "Tab"
+          :action #(yabai.jump-space-recent)}]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Apps Menu
@@ -362,41 +380,41 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local menu-items
-       [{:key    :space
-         :title  "Alfred"
-         :action (activator "Alfred 5")}
-        {:key   :w
-         :title "Window"
-         ;; :enter "windows:enter-window-menu"
-         ;; :exit "windows:exit-window-menu"
-         :items window-bindings}
-        {:key   :l
-         :title "Spaces"
-         :enter "windows:enter-spaces-menu"
-         :exit "windows:exit-spaces-menu"
-         :items spaces-bindings}
-        {:key   :a
-         :title "Apps"
-         :items app-bindings}
+       (concat
+        [{:key    :space
+          :title  "Alfred"
+          :action (activator "Alfred 5")}
+         {:key   :w
+          :title "Window"
+          ;; :enter "windows:enter-window-menu"
+          ;; :exit "windows:exit-window-menu"
+          :items window-bindings}
+         {:key   :l
+          :title "Spaces"
+          ;; :enter "windows:enter-spaces-menu"
+          ;; :exit "windows:exit-spaces-menu"
+          :items spaces-bindings}
+         {:key   :a
+          :title "Apps"
+          :items app-bindings}
 
-        {:key   :m
-         :title "Media"
-         :items media-bindings}
-        {:key   :x
-         :title "Emacs"
-         :items emacs-bindings}
-        {:key   :z
-         :title "Zoom"
-         :items zoom-bindings}
-        {:key "]"
-         :action #(yabai.space-next)}
-        {:key "["
-         :action #(yabai.space-previous)}
-        {:key "1" :action #(yabai.jump-space 1)}
-        {:key "2" :action #(yabai.jump-space 2)}
-        {:key "3" :action #(yabai.jump-space 3)}
-        {:key "4" :action #(yabai.jump-space 4)}
-        {:key "5" :action #(yabai.jump-space 5)}])
+         {:key   :m
+          :title "Media"
+          :items media-bindings}
+         {:key   :x
+          :title "Emacs"
+          :items emacs-bindings}
+         {:key   :z
+          :title "Zoom"
+          :items zoom-bindings}
+         {:key "]"
+          :action #(yabai.space-next)}
+         {:key "["
+          :action #(yabai.space-previous)}]
+        (fcollect [i 1 10]
+          (let [key (if (= i 10) "0" (tostring i))]
+            {:key key
+             :action #(yabai.jump-to-space i)}))))
 
 (require :browser)
 (require :language)
@@ -488,8 +506,8 @@
 
 (local emacs-config
        {:key "Emacs"
-        :activate (fn [] (vim.disable))
-        :deactivate (fn [] (vim.enable))
+        ;; :activate (fn [] (vim.disable))
+        ;; :deactivate (fn [] (vim.enable))
         :launch "emacs:maximize"
         :items []
         :keys []})
