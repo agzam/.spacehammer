@@ -203,8 +203,10 @@
   (move-window-adjacent-space-with-fallback "next" "prev"))
 
 (fn move-to-space [target-space]
-  (let [cmd (.. "yabai -m window --space " target-space " --focus 2>&1")
+  (let [cmd (.. "yabai -m window --space " target-space " 2>&1")
         result (run cmd)]
+
+    (log.d cmd)
 
     (if (not (result:find "could not locate space"))
         result

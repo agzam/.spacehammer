@@ -13,6 +13,9 @@
 (local {:concat concat
         :logf logf} (require :lib.functional))
 
+(hs.hotkey.setLogLevel :error)
+(hs.logger.setGlobalLogLevel :error)
+
 (require :my-emacs)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -632,5 +635,8 @@
 (hs.logger.historySize 0)
 ;; (local repl (require :repl))
 ;; (repl.run (repl.start {:port "9898"}))
+
+(local abr (require :abr))
+(abr.idle-watcher-start)
 
 config
