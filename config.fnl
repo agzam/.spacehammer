@@ -10,13 +10,13 @@
 (local coroutine (require :coroutine))
 (local yabai (require :yabai))
 
-(local {:concat concat
-        :logf logf} (require :lib.functional))
+(local {: concat : logf} (require :lib.functional))
 
 (hs.hotkey.setLogLevel :error)
 (hs.logger.setGlobalLogLevel :error)
 
-(require :my-emacs)
+(local { : url-act-in-emacs} (require :my-emacs))
+(local abr (require :abr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; WARNING
@@ -320,7 +320,10 @@
         ;;  :action (activator "Discord")}
         {:key :z
          :title "Zoom"
-         :action (activator "zoom.us")}])
+         :action (activator "zoom.us")}
+        {:key :p
+         :title "Toggle ABR watcher"
+         :action #(abr.toggle-watcher)}])
 
 (require :yt-music)
 
@@ -400,7 +403,11 @@
          {:key   :a
           :title "Apps"
           :items app-bindings}
-
+         {:key "b"
+          :title "browser"
+          :items [{:key :a
+                   :title "act on url"
+                   :action url-act-in-emacs}]}
          {:key   :m
           :title "Media"
           :items media-bindings}
@@ -413,7 +420,9 @@
          {:key "]"
           :action #(yabai.space-next)}
          {:key "["
-          :action #(yabai.space-previous)}]
+          :action #(yabai.space-previous)}
+         {:key "Tab"
+          :action #(yabai.jump-space-recent)}]
         (fcollect [i 1 10]
           (let [key (if (= i 10) "0" (tostring i))]
             {:key key
@@ -636,7 +645,7 @@
 ;; (local repl (require :repl))
 ;; (repl.run (repl.start {:port "9898"}))
 
-(local abr (require :abr))
 (abr.idle-watcher-start)
+(require :flameshot)
 
 config

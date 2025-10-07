@@ -159,29 +159,28 @@
         (set idx i)))
     idx))
 
+(fn show-space-label []
+  (let [focused-id (hs.spaces.focusedSpace)
+        disp-id (hs.spaces.spaceDisplay focused-id)
+        spc-names  (hs.spaces.missionControlSpaceNames)
+        disp-spcs (. spc-names disp-id)]
+    (hs.alert (. disp-spcs focused-id) 0.3)))
+
 (fn space-next []
-  ;; Unlike yabai method, this doesn't require scripting addition enabled.
-  (let [spaces (hs.spaces.spacesForScreen)
-        current-space (hs.spaces.focusedSpace)
-        current-idx (table.index-of spaces current-space)
-        next-idx (if (= current-idx (length spaces)) 1 (+ current-idx 1))
-        next-space (. spaces next-idx)]
-    (hs.spaces.gotoSpace next-space)))
+  (run "yabai -m space --focus next || yabai -m space --focus first")
+  (hs.timer.doAfter 0.1 show-space-label))
 
 (fn space-previous []
-  ;; Unlike yabai method, this doesn't require scripting addition enabled.
-  (let [spaces (hs.spaces.spacesForScreen)
-        current-space (hs.spaces.focusedSpace)
-        current-idx (table.index-of spaces current-space)
-        prev-idx (if (= current-idx 1) (length spaces) (- current-idx 1))
-        prev-space (. spaces prev-idx)]
-    (hs.spaces.gotoSpace prev-space)))
+  (run "yabai -m space --focus prev || yabai -m space --focus last")
+  (hs.timer.doAfter 0.1 show-space-label))
 
 (fn jump-to-space [idx]
-  (run (.. "yabai -m space --focus " idx)))
+  (run (.. "yabai -m space --focus " idx))
+  (hs.timer.doAfter 0.1 show-space-label))
 
 (fn jump-space-recent []
-  (run "yabai -m space --focus recent"))
+  (run "yabai -m space --focus recent")
+  (hs.timer.doAfter 0.1 show-space-label))
 
 (fn try-move-window-adjacent-space [direction]
   (let [cmd (.. "yabai -m window --space " direction " --focus 2>&1")
@@ -203,7 +202,7 @@
   (move-window-adjacent-space-with-fallback "next" "prev"))
 
 (fn move-to-space [target-space]
-  (let [cmd (.. "yabai -m window --space " target-space " 2>&1")
+  (let [cmd (.. "yabai -m window --space --focus" target-space " 2>&1")
         result (run cmd)]
 
     (log.d cmd)

@@ -26,6 +26,7 @@
          (hs.eventtap.keyStroke [] :return))))))
 
 (fn idle-watcher-start []
+  (hs.alert "ABR's gotta run")
   (set _G.idle-timer ; gotta store it, so it doesn't get GCed
    (hs.timer.doEvery
     (* 2 60) ;; check every two minutes
@@ -36,5 +37,17 @@
     ;; keep checking even if errors
     true)))
 
+(fn idle-watcher-stop []
+  (when _G.idle-timer
+    (_G.idle-timer:stop)
+    (hs.alert "ABR will stop trying")))
+
+(fn toggle-watcher []
+  (if (and _G.idle-timer (_G.idle-timer:running))
+      (idle-watcher-stop)
+      (idle-watcher-start)))
+
 { : activate
-  : idle-watcher-start}
+  : idle-watcher-start
+  : idle-watcher-stop
+  : toggle-watcher}
