@@ -1,7 +1,7 @@
 (local { : count : last : filter : first : find : contains? : seq?} (require :lib.functional))
 (local emacs (require :emacs))
 
-(local log (hs.logger.new :yabai :debug))
+(local log (hs.logger.new "yabai"))
 (local locked-windows {})
 
 (fn run [cmd]
@@ -202,11 +202,10 @@
   (move-window-adjacent-space-with-fallback "next" "prev"))
 
 (fn move-to-space [target-space]
-  (let [cmd (.. "yabai -m window --space --focus" target-space " 2>&1")
+  ;; (log.setLogLevel 5)
+  (let [cmd (.. "yabai -m window --space " target-space " --focus")
+        _ (log.d cmd )
         result (run cmd)]
-
-    (log.d cmd)
-
     (if (not (result:find "could not locate space"))
         result
         (do

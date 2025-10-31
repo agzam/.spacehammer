@@ -13,6 +13,6 @@
           (.. "export PATH=$PATH:/opt/homebrew/bin && "
               "emacsclient --eval \"(call-interactively 'ocr-clipboard-content)\""))
          (: (hs.application.find :Emacs)
-            :activaate)))))))
+            :activate)))))))
 
 (watcher:start)
