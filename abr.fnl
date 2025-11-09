@@ -39,31 +39,50 @@
                        (set reason-field field))))
                
                (email-field:setAttributeValue "AXValue" "ryl@qlik.com")
-               
-               (var focused false)
-               (: (abr-app:findWindow "^Request Administrator Access$") :focus)
-               (while (not focused)
-                 (hs.timer.usleep 50000) 
-                 (hs.eventtap.keyStroke [] :tab)
-                 (hs.timer.usleep 50000) 
-                 (set focused (reason-field:attributeValue "AXFocused")))
-               
-               (when focused
-                 (hs.eventtap.keyStrokes "sudome inmediatamente, pinche cabron!"))
+
+               ;; Safety: only proceed if we found the reason field
+               (when reason-field
+                 (var focused false)
+                 (var attempts 0)
+                 (let [max-attempts 10]  ;; prevent infinite loop
+                   (: (abr-app:findWindow "^Request Administrator Access$") :focus)
+                   (while (and (not focused)
+                               (< attempts max-attempts)
+                               ;; ensure window still exists
+                               (abr-app:findWindow "^Request Administrator Access$"))
+                     (hs.timer.usleep 50000)
+                     (hs.eventtap.keyStroke [] :tab)
+                     (hs.timer.usleep 50000)
+                     (set attempts (+ attempts 1))
+                     (set focused (reason-field:attributeValue "AXFocused")))
+
+                   (when focused
+                     (hs.eventtap.keyStrokes "sudome inmediatamente, pinche cabron!"))
+
+                   (when (and (not focused) (>= attempts max-attempts))
+                     (log.w "Failed to focus reason field after max attempts"))))
                
                (hs.timer.usleep 100000)
                (each [_ button (ipairs buttons)]
                  (when (= (button:attributeValue "AXTitle") "OK")
                      (button:performAction "AXPress")
+                     ;; After OK, either Instructions or Administrator Access appears
                      (hs.timer.waitUntil
-                      #(not= nil (abr-app:findWindow "Administrator Access"))
-                      bury))))))
-          
-          (hs.timer.waitUntil
-           #(not= nil (abr-app:findWindow "Instructions"))
-           (fn []
-             (: (abr-app:findWindow "Instructions") :focus)
-             (hs.eventtap.keyStroke [] :return)))))))
+                      #(or (abr-app:findWindow "Instructions")
+                           (abr-app:findWindow "Administrator Access"))
+                      (fn []
+                        (if (abr-app:findWindow "Instructions")
+                            ;; Handle the sometimes-appearing Instructions window
+                            (do
+                              (log.i "Instructions window appeared, dismissing...")
+                              (: (abr-app:findWindow "Instructions") :focus)
+                              (hs.eventtap.keyStroke [] :return)
+                              ;; Now wait for Administrator Access
+                              (hs.timer.waitUntil
+                               #(not= nil (abr-app:findWindow "Administrator Access"))
+                               bury))
+                            ;; Administrator Access appeared directly
+                            (bury)))))))))))))
 
 (fn idle-watcher-start []
   (hs.alert "ABR's gotta run")
