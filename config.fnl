@@ -320,10 +320,7 @@
         ;;  :action (activator "Discord")}
         {:key :z
          :title "Zoom"
-         :action (activator "zoom.us")}
-        {:key :p
-         :title "Toggle ABR watcher"
-         :action #(abr.toggle-watcher)}])
+         :action (activator "zoom.us")}])
 
 (require :yt-music)
 
@@ -379,7 +376,14 @@
        [return
         {:key :g
          :title "group windows"
-         :action zoom.group-zoom-windows}])
+         :action zoom.group-zoom-windows}
+        {:key :p
+         :title "Toggle ABR watcher"
+         :action #(abr.toggle-watcher)}
+        {:key :a
+         :mods [:Shift]
+         :title "ABR activate"
+         :action #(abr.activate)}])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Main Menu & Config

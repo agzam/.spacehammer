@@ -1,63 +1,69 @@
 ;; Stupid Admin By Request Bullshit
 (local log (hs.logger.new "abr.fnl" "debug"))
 
+(fn bury []
+  "push the fucking thing out of my sight"
+  (let [yabai (require :yabai)
+        abr-app (hs.application.find "Admin By Request")
+        w (abr-app:findWindow "Administrator Access")]
+    (when w
+      (w:focus)
+      (yabai.run "yabai -m window --space 3"))))
+
 (fn activate []
   (var email-field nil)
   (var reason-field nil)
   (let [abr-app (hs.application.find "Admin By Request")
-        inactive? (= nil (abr-app:findWindow "^Administrator Access$"))]
-    (when (and
-           inactive?
-           (hs.application.launchOrFocus "Admin By Request"))
-
-      (hs.timer.waitUntil
-       #(not= nil (abr-app:findWindow "Instructions"))
-       (fn []
-         (hs.eventtap.keyStroke [] :return)))
-
-      (hs.timer.waitUntil
-       #(not= nil (abr-app:findWindow "^Request Administrator Access$"))
-       (fn []
-         (let [win (abr-app:findWindow "^Request Administrator Access$")
-               ax (hs.axuielement.windowElement win)
-               fields (ax:childrenWithRole "AXTextField")
-               buttons (ax:childrenWithRole "AXButton")]
-
-           (each [_ field (ipairs fields)]
-             (let [placeholder (field:attributeValue "AXPlaceholderValue")]
-               (if (and placeholder (string.match placeholder "Email.*"))
-                   (set email-field field)
-                   (set reason-field field))))
-
-           (email-field:setAttributeValue "AXValue" "ryl@qlik.com")
-
-           (var focused false)
-           (while (not focused)
-             (hs.eventtap.keyStroke [] :tab)
-             (hs.timer.usleep 100000) ; small delay
-             (set focused (reason-field:attributeValue "AXFocused")))
-           
-           (when focused
-             (hs.eventtap.keyStrokes "sudome inmediatamente, pinche cabron!"))
-
-           (hs.timer.usleep 100000)
-           (each [_ button (ipairs buttons)]
-             (if (= (button:attributeValue "AXTitle") "OK")
-                 (button:performAction "AXPress"))))))
-
-      (hs.timer.waitUntil
-       #(not= nil (abr-app:findWindow "Instructions"))
-       (fn []
-         (hs.eventtap.keyStroke [] :return))))
-
-    (hs.timer.waitUntil
-     #(not= nil (abr-app:findWindow "Administrator Access"))
-     (fn []
-       (let [w (abr-app:findWindow "Administrator Access")
-             yabai (require :yabai)
-             cmd "yabai -m window --space 3"]
-         (w:focus)
-         (yabai.run cmd))))))
+        active? (abr-app:findWindow "^Administrator Access$")]
+    (if active?
+        (bury)
+        (do
+          (hs.application.launchOrFocus "Admin By Request")
+          (hs.timer.waitUntil
+           #(not= nil (abr-app:findWindow "Instructions"))
+           (fn []
+             (hs.eventtap.keyStroke [] :return)))
+          
+          (hs.timer.waitUntil
+           #(not= nil (abr-app:findWindow "^Request Administrator Access$"))
+           (fn []
+             (let [win (abr-app:findWindow "^Request Administrator Access$")
+                   ax (hs.axuielement.windowElement win)
+                   fields (ax:childrenWithRole "AXTextField")
+                   buttons (ax:childrenWithRole "AXButton")]
+               
+               (each [_ field (ipairs fields)]
+                 (let [placeholder (field:attributeValue "AXPlaceholderValue")]
+                   (if (and placeholder (string.match placeholder "Email.*"))
+                       (set email-field field)
+                       (set reason-field field))))
+               
+               (email-field:setAttributeValue "AXValue" "ryl@qlik.com")
+               
+               (var focused false)
+               (: (abr-app:findWindow "^Request Administrator Access$") :focus)
+               (while (not focused)
+                 (hs.timer.usleep 50000) 
+                 (hs.eventtap.keyStroke [] :tab)
+                 (hs.timer.usleep 50000) 
+                 (set focused (reason-field:attributeValue "AXFocused")))
+               
+               (when focused
+                 (hs.eventtap.keyStrokes "sudome inmediatamente, pinche cabron!"))
+               
+               (hs.timer.usleep 100000)
+               (each [_ button (ipairs buttons)]
+                 (when (= (button:attributeValue "AXTitle") "OK")
+                     (button:performAction "AXPress")
+                     (hs.timer.waitUntil
+                      #(not= nil (abr-app:findWindow "Administrator Access"))
+                      bury))))))
+          
+          (hs.timer.waitUntil
+           #(not= nil (abr-app:findWindow "Instructions"))
+           (fn []
+             (: (abr-app:findWindow "Instructions") :focus)
+             (hs.eventtap.keyStroke [] :return)))))))
 
 (fn idle-watcher-start []
   (hs.alert "ABR's gotta run")
