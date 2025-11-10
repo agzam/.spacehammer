@@ -49,10 +49,14 @@
     ;; Send to Emacs if we have a URL
     (when url
       (let [cmd (string.format
-                 "emacsclient -e '(embark-ephemeral-act \"%s\")'" 
-                 (url:gsub "'" "'\\''"))]
+                 "emacsclient -e '(embark-ephemeral-act \"%s\")'"
+                 (url:gsub "'" "'\\''"))
+            full-cmd (string.format "export PATH=$PATH:/opt/homebrew/bin && %s" cmd)
+            task (hs.task.new "/bin/sh"
+                              (fn [_exit-code _stdout _stderr])
+                              ["-c" full-cmd])]
         (activate-app :Emacs)
-        (hs.execute (string.format "export PATH=$PATH:/opt/homebrew/bin && %s &" cmd))))))
+        (task:start)))))
 
 { : url-act-in-emacs
   }
