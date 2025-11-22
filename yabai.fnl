@@ -440,4 +440,14 @@
  : prev-window
 
  : toggle-lock-window-sizing
+
+ ;; Buffer switching handler for yabai
+ :buffer-switch-handler
+ (fn [current-window-id target-window-info]
+   "Swap current window with target window in yabai"
+   (let [target-id (. target-window-info :window-id)
+         target-app (. target-window-info :app)]
+     (run (.. "yabai -m window " target-id " --swap " current-window-id))
+     (run (.. "yabai -m window --focus " target-id))
+     (hs.alert (.. "↔ Swapped with " target-app) 0.5)))
  }

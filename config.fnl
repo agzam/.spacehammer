@@ -389,6 +389,8 @@
 ;; Main Menu & Config
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local buffers (require :buffers))
+
 (local menu-items
        (concat
         [{:key    :space
@@ -411,7 +413,10 @@
           :title "browser"
           :items [{:key :a
                    :title "act on url"
-                   :action url-act-in-emacs}]}
+                   :action url-act-in-emacs}
+                  {:key :b
+                   :title "buffers"
+                   :action #(buffers.show-buffer-picker yabai.buffer-switch-handler)}]}
          {:key   :m
           :title "Media"
           :items media-bindings}
