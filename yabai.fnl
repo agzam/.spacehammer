@@ -306,7 +306,127 @@
       )))
 
 (fn prev-window []
-  (run (.. "yabai -m window --focus prev")))
+  (run "yabai -m window --focus prev"))
+
+(fn flash-focused-window []
+  "Flash a bright orange border around the currently focused window with eased fade-out"
+  (let [win (hs.window.focusedWindow)]
+    (when win
+      (let [frame (win:frame)
+            border-width 7
+            canvas (hs.canvas.new {:x frame.x 
+                                  :y frame.y 
+                                  :w frame.w 
+                                  :h frame.h})]
+        ;; Configure canvas with orange border that fills the entire canvas
+        (canvas:appendElements
+         [{:type :rectangle
+           :action :stroke
+           :strokeColor {:red 1.0 :green 0.5 :blue 0.0 :alpha 1.0}
+           :strokeWidth border-width
+           :frame {:x "0%" :y "0%" :w "100%" :h "100%"}}])
+        (canvas:level "overlay")
+        (canvas:alpha 1.0)
+        (canvas:show)
+        
+        ;; Hold for 0.4s, then fade out over 1.2 seconds with ease-out
+        (var time 0)
+        (local hold-time 0.4)
+        (local duration 1.2)
+        (local interval 0.02)
+        ;; Wait before starting fade
+        (hs.timer.doAfter hold-time
+                         (fn []
+                           (hs.timer.doUntil
+                            #(<= duration time)
+                            (fn []
+                              (set time (+ time interval))
+                              (let [progress (/ time duration)
+                                    ;; Ease-out cubic: 1 - (1-t)^3
+                                    eased (- 1 (math.pow (- 1 progress) 3))
+                                    alpha (- 1 eased)]
+                                (canvas:alpha (math.max 0 alpha))))
+                            interval)
+                           ;; Delete canvas after fade completes
+                           (hs.timer.doAfter (+ duration 0.05) #(canvas:delete))))))))
+
+;; State for window cycling
+(var window-ids [])
+(var current-index 1)
+(var window-count 0)
+
+(fn get-all-window-ids []
+  "Get array of all window IDs from yabai"
+  (let [result (run "yabai -m query --windows")
+        windows (hs.json.decode result)
+        ids []]
+    (each [_ win (ipairs windows)]
+      (table.insert ids (. win :id)))
+    ids))
+
+(fn find-index [id ids]
+  "Find index of id in ids array, returns nil if not found"
+  (var found nil)
+  (each [i wid (ipairs ids)]
+    (when (= wid id)
+      (set found i)))
+  found)
+
+(fn should-reset-cycle? [cur-id all-ids]
+  "Check if we should reset the cycle"
+  (or
+   ;; Window count changed
+   (not= (length all-ids) window-count)
+   ;; Current window not in our stored list (switched elsewhere)
+   (not (find-index cur-id window-ids))))
+
+(fn init-cycle []
+  "Initialize/reset the cycle with fresh window list"
+  (let [cur-result (run "yabai -m query --windows --window")
+        cur-win (hs.json.decode cur-result)
+        cur-id (. cur-win :id)
+        all-ids (get-all-window-ids)]
+    (set window-ids all-ids)
+    (set window-count (length all-ids))
+    (set current-index (or (find-index cur-id all-ids) 1))))
+
+(fn swap-next-window []
+  (let [cur-result (run "yabai -m query --windows --window")
+        cur-win (hs.json.decode cur-result)
+        cur-id (. cur-win :id)
+        all-ids (get-all-window-ids)]
+    
+    ;; Reset if needed
+    (when (should-reset-cycle? cur-id all-ids)
+      (init-cycle))
+    
+    ;; Cycle to next
+    (when (< 1 (length window-ids))
+      (let [next-idx (if (>= current-index (length window-ids)) 1 (+ current-index 1))
+            target-id (. window-ids next-idx)]
+        (run (.. "yabai -m window --swap " target-id))
+        (run (.. "yabai -m window --focus " target-id))
+        (set current-index next-idx)
+        (hs.timer.doAfter 0.1 flash-focused-window)))))
+
+(fn swap-prev-window []
+  (let [cur-result (run "yabai -m query --windows --window")
+        cur-win (hs.json.decode cur-result)
+        cur-id (. cur-win :id)
+        all-ids (get-all-window-ids)]
+    
+    ;; Reset if needed
+    (when (should-reset-cycle? cur-id all-ids)
+      (init-cycle))
+    
+    ;; Cycle to prev
+    (when (< 1 (length window-ids))
+      (let [prev-idx (if (<= current-index 1) (length window-ids) (- current-index 1))
+            target-id (. window-ids prev-idx)]
+        (run (.. "yabai -m window --swap " target-id))
+        (run (.. "yabai -m window --focus " target-id))
+        (set current-index prev-idx)
+        (hs.timer.doAfter 0.1 flash-focused-window)))))
 
 ;; There's no built-in yabai feature that allows you lock given window
 ;; dimensions. Yet we can mark windows as 'locked' and then resize
@@ -317,7 +437,7 @@
 ;; yabai -m signal --add event=window_resized action="hs -c 'local yb=require(\"yabai\") yb[\"redraw-locked-window-sizes\"]()'"
 (fn toggle-lock-window-sizing []
   (let [cw (hs.window.focusedWindow)
-        cw-id (: cw :id)
+        cw-id (cw:id)
         locked? (-> locked-windows (. cw-id))
         space-win-ids (-> (current-space) (. :windows))]
     (if locked?
@@ -438,6 +558,8 @@
 
  : next-window
  : prev-window
+ : swap-next-window
+ : swap-prev-window
 
  : toggle-lock-window-sizing
 
@@ -445,9 +567,7 @@
  :buffer-switch-handler
  (fn [current-window-id target-window-info]
    "Swap current window with target window in yabai"
-   (let [target-id (. target-window-info :window-id)
-         target-app (. target-window-info :app)]
+   (let [target-id (. target-window-info :window-id)]
      (run (.. "yabai -m window " target-id " --swap " current-window-id))
-     (run (.. "yabai -m window --focus " target-id))
-     (hs.alert (.. "↔ Swapped with " target-app) 0.5)))
+     (run (.. "yabai -m window --focus " target-id))))
  }

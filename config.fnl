@@ -417,6 +417,12 @@
                   {:key :b
                    :title "buffers"
                    :action #(buffers.show-buffer-picker yabai.buffer-switch-handler)}]}
+         {:key :n
+          :title "Next Window"
+          :action #(yabai.swap-next-window)}
+         {:key :p
+          :title "Prev Window"
+          :action #(yabai.swap-prev-window)}
          {:key   :m
           :title "Media"
           :items media-bindings}

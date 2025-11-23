@@ -47,7 +47,7 @@
     (when (and result (not= result ""))
       (hs.json.decode result))))
 
-(fn is-normal-window? [window]
+(fn normal-window? [window]
   "Check if window is a normal user-facing window (not a tool/internal window)"
   (let [subrole (. window :subrole)
         role (. window :role)
@@ -77,7 +77,7 @@
             display-text (.. app ": " title)]
         ;; Only include normal windows that aren't the current one
         (when (and (not= window-id current-window-id)
-                   (is-normal-window? window))
+                   (normal-window? window))
           (table.insert choices
                        {:text display-text
                         :subText (.. "ID: " window-id 
