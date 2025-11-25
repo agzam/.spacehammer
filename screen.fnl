@@ -152,6 +152,53 @@ https://github.com/Hammerspoon/hammerspoon/issues/3320"
         (shrink-window win secondary-side secondary-direction)
         (widen-window win primary-side primary-direction))))
 
+
+(fn flash-focused-window-impl []
+  "Flash a bright orange border around the currently focused window with eased fade-out"
+  (let [win (hs.window.focusedWindow)]
+    (when win
+      (let [frame (win:frame)
+            border-width 7
+            canvas (hs.canvas.new {:x frame.x 
+                                  :y frame.y 
+                                  :w frame.w 
+                                  :h frame.h})]
+        ;; Configure canvas with orange border that fills the entire canvas
+        (canvas:appendElements
+         [{:type :rectangle
+           :action :stroke
+           :strokeColor {:red 1.0 :green 0.5 :blue 0.0 :alpha 1.0}
+           :strokeWidth border-width
+           :frame {:x "0%" :y "0%" :w "100%" :h "100%"}}])
+        (canvas:level "overlay")
+        (canvas:alpha 1.0)
+        (canvas:show)
+        
+        ;; Hold for 0.4s, then fade out over 1.2 seconds with ease-out
+        (var time 0)
+        (local hold-time 0.4)
+        (local duration 1.2)
+        (local interval 0.02)
+        ;; Wait before starting fade
+        (hs.timer.doAfter hold-time
+                         (fn []
+                           (hs.timer.doUntil
+                            #(<= duration time)
+                            (fn []
+                              (set time (+ time interval))
+                              (let [progress (/ time duration)
+                                    ;; Ease-out cubic: 1 - (1-t)^3
+                                    eased (- 1 (math.pow (- 1 progress) 3))
+                                    alpha (- 1 eased)]
+                                (canvas:alpha (math.max 0 alpha))))
+                            interval)
+                           ;; Delete canvas after fade completes
+                           (hs.timer.doAfter (+ duration 0.05) #(canvas:delete))))))))
+
+(fn flash-focused-window []
+  (hs.timer.doAfter 0.05 flash-focused-window-impl))
+
 {
  : adjust-window-size
+ : flash-focused-window
 }

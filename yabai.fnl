@@ -3,6 +3,7 @@
 
 (local log (hs.logger.new "yabai"))
 (local locked-windows {})
+(local { : flash-focused-window } (require :screen))
 
 (fn run [cmd]
   (->
@@ -224,7 +225,8 @@
         blank? #(or (= $1 nil) (= $1 ""))]
     (if (blank? id)
         (hs.application.launchOrFocus app-name)
-        (run (.. "yabai -m window --focus " id)))))
+        (run (.. "yabai -m window --focus " id)))
+    (flash-focused-window)))
 
 (fn edit-with-emacs []
   (let [emacs-space
@@ -308,48 +310,6 @@
 (fn prev-window []
   (run "yabai -m window --focus prev"))
 
-(fn flash-focused-window []
-  "Flash a bright orange border around the currently focused window with eased fade-out"
-  (let [win (hs.window.focusedWindow)]
-    (when win
-      (let [frame (win:frame)
-            border-width 7
-            canvas (hs.canvas.new {:x frame.x 
-                                  :y frame.y 
-                                  :w frame.w 
-                                  :h frame.h})]
-        ;; Configure canvas with orange border that fills the entire canvas
-        (canvas:appendElements
-         [{:type :rectangle
-           :action :stroke
-           :strokeColor {:red 1.0 :green 0.5 :blue 0.0 :alpha 1.0}
-           :strokeWidth border-width
-           :frame {:x "0%" :y "0%" :w "100%" :h "100%"}}])
-        (canvas:level "overlay")
-        (canvas:alpha 1.0)
-        (canvas:show)
-        
-        ;; Hold for 0.4s, then fade out over 1.2 seconds with ease-out
-        (var time 0)
-        (local hold-time 0.4)
-        (local duration 1.2)
-        (local interval 0.02)
-        ;; Wait before starting fade
-        (hs.timer.doAfter hold-time
-                         (fn []
-                           (hs.timer.doUntil
-                            #(<= duration time)
-                            (fn []
-                              (set time (+ time interval))
-                              (let [progress (/ time duration)
-                                    ;; Ease-out cubic: 1 - (1-t)^3
-                                    eased (- 1 (math.pow (- 1 progress) 3))
-                                    alpha (- 1 eased)]
-                                (canvas:alpha (math.max 0 alpha))))
-                            interval)
-                           ;; Delete canvas after fade completes
-                           (hs.timer.doAfter (+ duration 0.05) #(canvas:delete))))))))
-
 ;; State for window cycling
 (var window-ids [])
 (var current-index 1)
@@ -407,7 +367,7 @@
         (run (.. "yabai -m window --swap " target-id))
         (run (.. "yabai -m window --focus " target-id))
         (set current-index next-idx)
-        (hs.timer.doAfter 0.1 flash-focused-window)))))
+        (flash-focused-window)))))
 
 (fn swap-prev-window []
   (let [cur-result (run "yabai -m query --windows --window")
@@ -426,7 +386,7 @@
         (run (.. "yabai -m window --swap " target-id))
         (run (.. "yabai -m window --focus " target-id))
         (set current-index prev-idx)
-        (hs.timer.doAfter 0.1 flash-focused-window)))))
+        (flash-focused-window)))))
 
 ;; There's no built-in yabai feature that allows you lock given window
 ;; dimensions. Yet we can mark windows as 'locked' and then resize
