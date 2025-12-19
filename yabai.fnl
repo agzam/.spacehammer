@@ -237,12 +237,13 @@
 
 (fn other-screen-idx []
   (->
-   (.. "yabai -m query --displays --display | jq '.index'")
+   "yabai -m query --displays --display | jq '.index'"
    (run)
    (tonumber 10)
    (case
-       ;; I have only two monitors
-       1 2
+       ;; I have only three monitors
+       1 3
+       3 2
        2 1)))
 
 (fn move-to-other-screen []
@@ -530,4 +531,6 @@
    (let [target-id (. target-window-info :window-id)]
      (run (.. "yabai -m window " target-id " --swap " current-window-id))
      (run (.. "yabai -m window --focus " target-id))))
+
+ :restart-service #(run "yabai --restart-service")
  }

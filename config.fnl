@@ -228,7 +228,11 @@
          {:key "1"
           :mods [:shift]
           :title "! - lock re-sizing"
-          :action #(yabai.toggle-lock-window-sizing)}]))
+          :action #(yabai.toggle-lock-window-sizing)}
+         {:key "r"
+          :mods [:shift]
+          :title "yabai reset"
+          :action #(yabai.restart-service)}]))
 
 (local spaces-bindings
        (concat
