@@ -4,6 +4,7 @@
     (app:selectMenuItem [:File :Workspace :QlikDev])
     (when app
       (hs.eventtap.keyStroke ["cmd"] "g" 0 app)
+      (hs.timer.usleep 500)
       (hs.eventtap.keyStroke ["alt" "ctrl"] "Delete" 0 app)
       (hs.eventtap.keyStrokes search-term app)
       (hs.eventtap.keyStroke [] :return 0 app))))

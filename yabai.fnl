@@ -236,15 +236,11 @@
     (run (.. "yabai -m space --focus " emacs-space))))
 
 (fn other-screen-idx []
-  (->
-   "yabai -m query --displays --display | jq '.index'"
-   (run)
-   (tonumber 10)
-   (case
-       ;; I have only three monitors
-       1 3
-       3 2
-       2 1)))
+  (let [current (-> "yabai -m query --displays --display | jq '.index'"
+                    (run) (tonumber 10))
+        total (-> "yabai -m query --displays | jq 'length'"
+                  (run) (tonumber 10))]
+    (+ (% current total) 1)))
 
 (fn move-to-other-screen []
   (let [other (other-screen-idx)]

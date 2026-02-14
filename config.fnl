@@ -324,7 +324,10 @@
         ;;  :action (activator "Discord")}
         {:key :z
          :title "Zoom"
-         :action (activator "zoom.us")}])
+         :action (activator "zoom.us")}
+        {:key :c
+         :title "Claude"
+         :action (activator "Claude")}])
 
 (require :yt-music)
 
@@ -664,7 +667,6 @@
 ;; (local repl (require :repl))
 ;; (repl.run (repl.start {:port "9898"}))
 
-(abr.idle-watcher-start)
 (require :flameshot)
 
 config
