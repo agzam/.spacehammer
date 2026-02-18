@@ -17,6 +17,7 @@
 
 (local { : url-act-in-emacs} (require :my-emacs))
 (local abr (require :abr))
+(local my-slack (require :my-slack))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; WARNING
@@ -430,6 +431,12 @@
          {:key :p
           :title "Prev Window"
           :action #(yabai.swap-prev-window)}
+         {:key   :s
+          :title "Slack"
+          :items [return
+                  {:key :s
+                   :title "Capture message"
+                   :action #(my-slack.capture)}]}
          {:key   :m
           :title "Media"
           :items media-bindings}
@@ -567,8 +574,6 @@
                   :title "Clear Console"
                   :action hs.console.clearConsole}])
         :keys []})
-
-(local my-slack (require :my-slack))
 
 (local slack-config
        {:key "Slack"
