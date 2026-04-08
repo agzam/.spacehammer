@@ -669,8 +669,8 @@
 (tset hs.alert.defaultStyle :fadeOutDuration 0.1)
 (set hs.grid.ui.showExtraKeys true)
 (hs.logger.historySize 0)
-;; (local repl (require :repl))
-;; (repl.run (repl.start {:port "9898"}))
+(local repl (require :repl))
+(repl.run (repl.start {:port 7888 :host "127.0.0.1"}))
 
 (require :flameshot)
 
