@@ -11,12 +11,24 @@
    (string.gsub "[\n\r]+$" "")
    (string.gsub "^%*(.-)%s*$" "%1")))
 
+(fn run-async [cmd ?callback]
+  "Execute shell command asynchronously via hs.task."
+  (let [cb (fn [exit-code stdout stderr]
+             (when ?callback
+               (let [result (-> stdout
+                                (string.gsub "[\n\r]+$" "")
+                                (string.gsub "^%*(.-)%s*$" "%1"))]
+                 (?callback result exit-code))))
+        task (hs.task.new "/bin/sh" cb
+               ["-c" (.. "export PATH=$PATH:/opt/homebrew/bin && " cmd)])]
+    (task:start)))
+
 (fn jump-window [dir]
-  (run (.. "yabai -m window --focus " dir " || "
-           "yabai -m display --focus " dir)))
+  (run-async (.. "yabai -m window --focus " dir " || "
+                 "yabai -m display --focus " dir)))
 
 (fn swap-window [dir]
-  (run
+  (run-async
    (.. "yabai -m window --swap " dir
        " || ("
        "yabai -m window --display " dir " && "
@@ -73,7 +85,7 @@
 (local resize-coeff 120)
 
 (fn jump-window-recent []
-  (run "yabai -m window --focus recent"))
+  (run-async "yabai -m window --focus recent"))
 
 (fn resize-left []
   (let [cw  (current-window)]
@@ -138,19 +150,19 @@
              (string.format params n n)))))
 
 (fn toggle-maximize []
-  (run (.. "yabai -m window --toggle zoom-fullscreen")))
+  (run-async "yabai -m window --toggle zoom-fullscreen"))
 
 (fn minimize []
-  (run (.. "yabai -m window --minimize")))
+  (run-async "yabai -m window --minimize"))
 
 (fn toggle-float []
-  (run (.. "yabai -m window --toggle float")))
+  (run-async "yabai -m window --toggle float"))
 
 (fn toggle-sticky []
-  (run "yabai -m window --toggle sticky"))
+  (run-async "yabai -m window --toggle sticky"))
 
 (fn balance []
-  (run "yabai -m space --balance"))
+  (run-async "yabai -m space --balance"))
 
 (tset table :index-of
   (fn [tbl value]
@@ -168,20 +180,20 @@
     (hs.alert (. disp-spcs focused-id) 0.3)))
 
 (fn space-next []
-  (run "yabai -m space --focus next || yabai -m space --focus first")
-  (hs.timer.doAfter 0.1 show-space-label))
+  (run-async "yabai -m space --focus next || yabai -m space --focus first"
+             (fn [] (hs.timer.doAfter 0.1 show-space-label))))
 
 (fn space-previous []
-  (run "yabai -m space --focus prev || yabai -m space --focus last")
-  (hs.timer.doAfter 0.1 show-space-label))
+  (run-async "yabai -m space --focus prev || yabai -m space --focus last"
+             (fn [] (hs.timer.doAfter 0.1 show-space-label))))
 
 (fn jump-to-space [idx]
-  (run (.. "yabai -m space --focus " idx))
-  (hs.timer.doAfter 0.1 show-space-label))
+  (run-async (.. "yabai -m space --focus " idx)
+             (fn [] (hs.timer.doAfter 0.1 show-space-label))))
 
 (fn jump-space-recent []
-  (run "yabai -m space --focus recent")
-  (hs.timer.doAfter 0.1 show-space-label))
+  (run-async "yabai -m space --focus recent"
+             (fn [] (hs.timer.doAfter 0.1 show-space-label))))
 
 (fn try-move-window-adjacent-space [direction]
   (let [cmd (.. "yabai -m window --space " direction " --focus 2>&1")
@@ -215,25 +227,25 @@
           (run cmd)))))
 
 (fn remove-space []
-  (run "yabai -m space --destroy 2>&1"))
+  (run-async "yabai -m space --destroy 2>&1"))
 
 (fn activate-app [app-name]
-  (let [id (-> (.. "yabai -m query --windows | jq '.[] | "
-                   "select(.app==\"" app-name "\") | .id' | tail -n1")
-               run
-               (string.gsub "[\n\r]+" ""))
-        blank? #(or (= $1 nil) (= $1 ""))]
-    (if (blank? id)
-        (hs.application.launchOrFocus app-name)
-        (run (.. "yabai -m window --focus " id)))
-    (flash-focused-window)))
+  "Activate app by name, non-blocking."
+  (let [script (.. "id=$(yabai -m query --windows"
+                   " | jq '.[] | select(.app==\"" app-name "\") | .id'"
+                   " | tail -n1);"
+                   " if [ -n \"$id\" ]; then"
+                   " yabai -m window --focus \"$id\";"
+                   " else open -a \"" app-name "\";"
+                   " fi")]
+    (run-async script (fn [] (flash-focused-window)))))
 
 (fn edit-with-emacs []
   (let [emacs-space
         (run (.. "yabai -m query --windows "
-                 "| jq -r \".[] | select(.app==\\\"Emacs\\\") | .space\""))]
-    (emacs.edit-with-emacs)
-    (run (.. "yabai -m space --focus " emacs-space))))
+                 "| jq -r '[.[] | select(.app==\"Emacs\") | .space][0]'"))]
+    (emacs.edit-with-emacs
+     {:on-ready (fn [] (run-async (.. "yabai -m space --focus " emacs-space)))})))
 
 (fn other-screen-idx []
   (let [current (-> "yabai -m query --displays --display | jq '.index'"
@@ -305,7 +317,7 @@
       )))
 
 (fn prev-window []
-  (run "yabai -m window --focus prev"))
+  (run-async "yabai -m window --focus prev"))
 
 ;; State for window cycling
 (var window-ids [])
@@ -474,6 +486,7 @@
 ;;                      id height-dir height-amount))))))))))
 
 {: run
+ : run-async
 
  :jump-window-left #(jump-window :west)
  :jump-window-right #(jump-window :east)
@@ -525,8 +538,8 @@
  (fn [current-window-id target-window-info]
    "Swap current window with target window in yabai"
    (let [target-id (. target-window-info :window-id)]
-     (run (.. "yabai -m window " target-id " --swap " current-window-id))
-     (run (.. "yabai -m window --focus " target-id))))
+     (run-async (.. "yabai -m window " target-id " --swap " current-window-id
+                    " && yabai -m window --focus " target-id))))
 
- :restart-service #(run "yabai --restart-service")
+ :restart-service #(run-async "yabai --restart-service")
  }
