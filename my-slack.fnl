@@ -326,4 +326,6 @@
  :capture capture
  :yank-url yank-url
  :get-visible-messages get-visible-messages
- :visible-messages-json visible-messages-json}
+ :visible-messages-json visible-messages-json
+ :show-indicator show-indicator
+ :hide-indicator hide-indicator}
