@@ -436,7 +436,10 @@
           :items [return
                   {:key :s
                    :title "Capture message"
-                   :action #(my-slack.capture)}]}
+                   :action #(my-slack.capture)}
+                  {:key :y
+                   :title "Yank message link"
+                   :action #(my-slack.yank-url)}]}
          {:key   :m
           :title "Media"
           :items media-bindings}

@@ -311,11 +311,19 @@
   "Pick a visible Slack message and send it to Emacs for capture."
   (pick-message "Select a Slack message" send-to-emacs))
 
+(fn yank-url []
+  "Pick a visible Slack message and copy its permalink to the clipboard."
+  (pick-message "Yank Slack message link"
+                (fn [url]
+                  (hs.pasteboard.setContents url)
+                  (hs.alert "Slack link copied"))))
+
 (fn visible-messages-json []
   "Visible messages as a JSON string, for consumption outside Hammerspoon."
   (hs.json.encode (or (get-visible-messages) [])))
 
 {:search search
  :capture capture
+ :yank-url yank-url
  :get-visible-messages get-visible-messages
  :visible-messages-json visible-messages-json}
