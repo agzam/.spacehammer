@@ -33,6 +33,29 @@
               (table.insert queue {:el kid :depth (+ d 1)})))))))
   found)
 
+(fn collect-by-class [root target max-depth]
+  "BFS collecting all elements whose AXDOMClassList contains target string.
+   Stops descending into matched elements."
+  (let [results []
+        queue [{:el root :depth 0}]]
+    (while (> (length queue) 0)
+      (let [item (table.remove queue 1)
+            el item.el
+            d item.depth
+            dom-cls (el:attributeValue :AXDOMClassList)]
+        (var matched false)
+        (when dom-cls
+          (each [_ cls (ipairs dom-cls)]
+            (when (string.find cls target 1 true)
+              (table.insert results el)
+              (set matched true))))
+        (when (and (not matched) (< d max-depth))
+          (let [kids (el:attributeValue :AXChildren)]
+            (when kids
+              (each [_ kid (ipairs kids)]
+                (table.insert queue {:el kid :depth (+ d 1)})))))))
+    results))
+
 (fn gc [el n]
   "Get the nth child of an AX element."
   (let [kids (el:attributeValue :AXChildren)]
@@ -57,7 +80,7 @@
   (let [val (el:attributeValue :AXValue)
         kids (el:attributeValue :AXChildren)
         parts []]
-    (when (and val (> (length val) 0) (not= (string.match val "^%s+$") val))
+    (when (and (= (type val) :string) (> (length val) 0) (not= (string.match val "^%s+$") val))
       (table.insert parts val))
     (when kids
       (each [_ kid (ipairs kids)]
@@ -118,9 +141,9 @@
                     pane-size (msg-pane:attributeValue :AXSize)
                     pane-top pane-pos.y
                     pane-bottom (+ pane-pos.y pane-size.h)
-                    ax-list (find-by-class msg-pane "sr-only" 5)]
-                (when ax-list
-                  (let [items (ax-list:attributeValue :AXChildren)
+                    scroller (find-by-class msg-pane "c-scrollbar__hider" 5)]
+                (when scroller
+                  (let [items (collect-by-class scroller "c-virtual_list__item" 3)
                         messages []]
                     (each [_ item (ipairs items)]
                       (let [data (extract-msg item)]
