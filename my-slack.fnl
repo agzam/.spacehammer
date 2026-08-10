@@ -26,7 +26,7 @@
 (fn find-by-class [root target max-depth]
   "BFS for the first element whose AXDOMClassList contains target string."
   (var found nil)
-  (var queue [{:el root :depth 0}])
+  (local queue [{:el root :depth 0}])
   (while (and (not found) (< 0 (length queue)))
     (let [item (table.remove queue 1)
           el item.el
@@ -91,10 +91,21 @@
   (when (and cur (has-class? cur "c-virtual_list__item")) cur))
 
 (fn strip-tail [text]
-  "Drop trailing time and reaction-count noise from a row aria-label."
+  "Drop trailing time/reaction/reply/edited noise from a row aria-label.
+   The fragments stack ('… 8:28 PM. 4 reactions. Edited Today at 8:31 PM.'),
+   so strip repeatedly until the tail stabilizes."
   (var t text)
-  (set t (pick-values 1 (string.gsub t "%s*%d+ reactions?%.?%s*$" "")))
-  (set t (pick-values 1 (string.gsub t "%s*%d+:%d%d [AP]M%.?%s*$" "")))
+  (var changed true)
+  (while changed
+    (set changed false)
+    (each [_ pat (ipairs ["%s*%d+:%d%d [AP]M%.?%s*$"
+                          "%s*%d+ reactions?%.?%s*$"
+                          "%s*%d+ repl%a+%.?%s*$"
+                          "%s*Edited [^%.]*%.?%s*$"])]
+      (let [(s n) (string.gsub t pat "")]
+        (when (< 0 n)
+          (set t s)
+          (set changed true)))))
   t)
 
 (fn parse-title [title]
