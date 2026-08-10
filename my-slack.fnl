@@ -13,42 +13,44 @@
 
 ;;; AX tree helpers
 
+(fn has-class? [el target]
+  "True if el's AXDOMClassList contains the target substring."
+  (let [dom-cls (el:attributeValue :AXDOMClassList)]
+    (var hit false)
+    (when dom-cls
+      (each [_ cls (ipairs dom-cls) &until hit]
+        (when (string.find cls target 1 true)
+          (set hit true))))
+    hit))
+
 (fn find-by-class [root target max-depth]
   "BFS for the first element whose AXDOMClassList contains target string."
   (var found nil)
   (var queue [{:el root :depth 0}])
-  (while (and (not found) (> (length queue) 0))
+  (while (and (not found) (< 0 (length queue)))
     (let [item (table.remove queue 1)
           el item.el
-          d item.depth
-          dom-cls (el:attributeValue :AXDOMClassList)]
-      (when dom-cls
-        (each [_ cls (ipairs dom-cls) &until found]
-          (when (string.find cls target 1 true)
-            (set found el))))
-      (when (and (not found) (< d max-depth))
-        (let [kids (el:attributeValue :AXChildren)]
-          (when kids
-            (each [_ kid (ipairs kids)]
-              (table.insert queue {:el kid :depth (+ d 1)})))))))
+          d item.depth]
+      (if (has-class? el target)
+          (set found el)
+          (when (< d max-depth)
+            (let [kids (el:attributeValue :AXChildren)]
+              (when kids
+                (each [_ kid (ipairs kids)]
+                  (table.insert queue {:el kid :depth (+ d 1)}))))))))
   found)
 
-(fn collect-by-class [root target max-depth]
-  "BFS collecting all elements whose AXDOMClassList contains target string.
-   Stops descending into matched elements."
+(fn collect-where [root pred max-depth]
+  "BFS collecting all elements satisfying pred.
+   Does not descend into matched elements."
   (let [results []
         queue [{:el root :depth 0}]]
-    (while (> (length queue) 0)
+    (while (< 0 (length queue))
       (let [item (table.remove queue 1)
             el item.el
             d item.depth
-            dom-cls (el:attributeValue :AXDOMClassList)]
-        (var matched false)
-        (when dom-cls
-          (each [_ cls (ipairs dom-cls)]
-            (when (string.find cls target 1 true)
-              (table.insert results el)
-              (set matched true))))
+            matched (pred el)]
+        (when matched (table.insert results el))
         (when (and (not matched) (< d max-depth))
           (let [kids (el:attributeValue :AXChildren)]
             (when kids
@@ -63,24 +65,13 @@
 
 ;;; Message extraction
 
-(fn skip-class? [cls-str]
-  "True for DOM class strings belonging to non-content parts of a message."
-  (or (string.find cls-str "sender_button" 1 true)
-      (string.find cls-str "c-timestamp" 1 true)
-      (string.find cls-str "reaction_bar" 1 true)
-      (string.find cls-str "reply_count" 1 true)
-      (string.find cls-str "reply_bar" 1 true)
-      (string.find cls-str "message_actions" 1 true)
-      (string.find cls-str "message_kit__file" 1 true)
-      (string.find cls-str "avatar" 1 true)
-      (string.find cls-str "file_gallery" 1 true)))
-
 (fn collect-text [el]
   "Recursively gather all AXValue text from an element tree."
   (let [val (el:attributeValue :AXValue)
         kids (el:attributeValue :AXChildren)
         parts []]
-    (when (and (= (type val) :string) (> (length val) 0) (not= (string.match val "^%s+$") val))
+    (when (and (= (type val) :string) (> (length val) 0)
+               (not= (string.match val "^%s+$") val))
       (table.insert parts val))
     (when kids
       (each [_ kid (ipairs kids)]
@@ -89,69 +80,103 @@
             (table.insert parts sub)))))
     (table.concat parts " ")))
 
-(fn extract-msg [msg-el]
-  "Pull sender, timestamp URL, display time, text, and screen frame
-   from a message list item."
-  (let [hover (gc msg-el 1)
-        actions (when hover (gc hover 1))]
-    (when actions
-      (let [kids (actions:attributeValue :AXChildren)
-            pos (actions:attributeValue :AXPosition)
-            size (actions:attributeValue :AXSize)
-            result {:sender ""
-                    :url nil
-                    :time ""
-                    :text ""
-                    :frame (when (and pos size)
-                             {:x pos.x :y pos.y :w size.w :h size.h})}]
-        (when kids
-          (each [_ child (ipairs kids)]
-            (let [role (or (child:attributeValue :AXRole) "")
-                  dom-cls (child:attributeValue :AXDOMClassList)
-                  cls-str (if dom-cls (table.concat dom-cls ",") "")]
-              (when (string.find cls-str "sender_button" 1 true)
-                (tset result :sender (or (child:attributeValue :AXTitle) "")))
-              (when (string.find cls-str "c-timestamp" 1 true)
-                (let [ax-url (child:attributeValue :AXURL)
-                      time-kid (gc child 1)]
-                  (when (and ax-url ax-url.url)
-                    (tset result :url ax-url.url))
-                  (when time-kid
-                    (tset result :time
-                          (or (time-kid:attributeValue :AXValue) "")))))
-              (when (and (not (skip-class? cls-str))
-                         (or (= role :AXStaticText) (= role :AXGroup)
-                             (= role :AXList)))
-                (let [txt (collect-text child)]
-                  (when (> (length txt) 0)
-                    (tset result :text (.. result.text " " txt))))))))
-        (when result.url result)))))
+(fn climb-to-item [el max-hops]
+  "Walk up the AXParent chain to the enclosing virtual-list row."
+  (var cur el)
+  (var hops 0)
+  (while (and cur (< hops max-hops)
+              (not (has-class? cur "c-virtual_list__item")))
+    (set cur (cur:attributeValue :AXParent))
+    (set hops (+ hops 1)))
+  (when (and cur (has-class? cur "c-virtual_list__item")) cur))
+
+(fn strip-tail [text]
+  "Drop trailing time and reaction-count noise from a row aria-label."
+  (var t text)
+  (set t (pick-values 1 (string.gsub t "%s*%d+ reactions?%.?%s*$" "")))
+  (set t (pick-values 1 (string.gsub t "%s*%d+:%d%d [AP]M%.?%s*$" "")))
+  t)
+
+(fn parse-title [title]
+  "Split a row aria-label 'Sender: text… 10:04 AM.' into (sender text)."
+  (let [(sender rest) (string.match title "^(.-):%s+(.*)$")]
+    (if sender
+        (values sender (strip-tail rest))
+        (values "" (strip-tail title)))))
+
+(fn extract-from-stamp [stamp]
+  "Build a message record from a timestamp permalink element.
+   The row's aria-label carries sender and text; the row frame is used
+   for visibility filtering and the highlight overlay."
+  (let [ax-url (stamp:attributeValue :AXURL)
+        url (and ax-url ax-url.url)]
+    (when url
+      (let [time-kid (gc stamp 1)
+            time (or (and time-kid (time-kid:attributeValue :AXValue)) "")
+            item (or (climb-to-item stamp 8) stamp)
+            pos (item:attributeValue :AXPosition)
+            size (item:attributeValue :AXSize)
+            title (item:attributeValue :AXTitle)]
+        (when (and pos size)
+          (let [(sender text) (if (and title (< 0 (length title)))
+                                  (parse-title title)
+                                  (values (let [sb (find-by-class item
+                                                                  "sender_button"
+                                                                  6)]
+                                            (or (and sb
+                                                     (sb:attributeValue :AXTitle))
+                                                ""))
+                                          (collect-text item)))]
+            {:sender sender
+             :text text
+             :time time
+             :url url
+             :frame {:x pos.x :y pos.y :w size.w :h size.h}}))))))
 
 (fn get-visible-messages []
-  "Extract messages within the message pane's visible viewport."
+  "Extract visible Slack messages anywhere in the focused window.
+   Anchors on timestamp permalinks, so it works in channels, DMs,
+   thread panes, search results, and collapsed narrow layouts."
   (let [slack (hs.application.find :Slack)]
     (when slack
       (let [ax-app (ax.applicationElement slack)
-            wins (ax-app:attributeValue :AXWindows)
-            win (when wins (. wins 1))]
+            win (or (ax-app:attributeValue :AXFocusedWindow)
+                    (let [wins (ax-app:attributeValue :AXWindows)]
+                      (when wins (. wins 1))))]
         (when win
-          (let [msg-pane (find-by-class win "p-message_pane" 20)]
-            (when msg-pane
-              (let [pane-pos (msg-pane:attributeValue :AXPosition)
-                    pane-size (msg-pane:attributeValue :AXSize)
-                    pane-top pane-pos.y
-                    pane-bottom (+ pane-pos.y pane-size.h)
-                    scroller (find-by-class msg-pane "c-scrollbar__hider" 5)]
-                (when scroller
-                  (let [items (collect-by-class scroller "c-virtual_list__item" 3)
-                        messages []]
-                    (each [_ item (ipairs items)]
-                      (let [data (extract-msg item)]
-                        (when (and data data.frame (< 20 data.frame.h)
-                                   (< pane-top data.frame.y)
-                                   (< (+ data.frame.y data.frame.h) pane-bottom))
-                          (table.insert messages data))))
-                    messages))))))))))
+          (let [win-pos (win:attributeValue :AXPosition)
+                win-size (win:attributeValue :AXSize)
+                stamps (collect-where win
+                                      (fn [el]
+                                        (and (has-class? el "c-timestamp")
+                                             (not= (el:attributeValue :AXURL)
+                                                   nil)))
+                                      40)
+                best {}
+                order []]
+            (each [_ stamp (ipairs stamps)]
+              (let [data (extract-from-stamp stamp)]
+                ;; h > 20 drops virtualized placeholder rows; the rest is
+                ;; a viewport intersection test
+                (when (and data (< 20 data.frame.h)
+                           (< win-pos.y (+ data.frame.y data.frame.h))
+                           (< data.frame.y (+ win-pos.y win-size.h))
+                           (< win-pos.x (+ data.frame.x data.frame.w))
+                           (< data.frame.x (+ win-pos.x win-size.w)))
+                  (let [prev (. best data.url)]
+                    (when (not prev)
+                      (table.insert order data.url))
+                    ;; same permalink can render twice (e.g. thread parent
+                    ;; in pane and flexpane); keep the taller rendition
+                    (when (or (not prev) (< prev.frame.h data.frame.h))
+                      (tset best data.url data))))))
+            (let [messages (icollect [_ url (ipairs order)] (. best url))]
+              (table.sort messages
+                          (fn [a b]
+                            (if (= a.frame.x b.frame.x)
+                                (< a.frame.y b.frame.y)
+                                (< a.frame.x b.frame.x))))
+              messages)))))))
 
 ;;; Emacs integration
 
@@ -236,15 +261,15 @@
 
 ;;; Chooser UI
 
-(fn capture []
-  "Show a chooser of visible Slack messages, send selected to Emacs.
+(fn pick-message [placeholder on-choice]
+  "Show a chooser of visible Slack messages, call on-choice with the URL.
    Highlights the corresponding message in Slack as you navigate."
   (let [slack (hs.application.find :Slack)]
     (when slack (slack:activate)))
   (hs.timer.doAfter 0.3
                     (fn []
                       (let [messages (get-visible-messages)]
-                        (if (and messages (> (length messages) 0))
+                        (if (and messages (< 0 (length messages)))
                             (let [slack-win (let [s (hs.application.find :Slack)]
                                               (when s (. (s:allWindows) 1)))
                                   win-img (when slack-win (slack-win:snapshot))
@@ -272,8 +297,8 @@
                                                             (hide-indicator)
                                                             (when (and choice
                                                                        choice.url)
-                                                              (send-to-emacs choice.url))))]
-                              (chooser:placeholderText "Select a Slack message")
+                                                              (on-choice choice.url))))]
+                              (chooser:placeholderText placeholder)
                               (chooser:width 20)
                               (chooser:rows 10)
                               (chooser:choices reversed)
@@ -282,4 +307,15 @@
                               (chooser:show))
                             (hs.alert "No messages found in current Slack view"))))))
 
-{:search search :capture capture :get-visible-messages get-visible-messages}
+(fn capture []
+  "Pick a visible Slack message and send it to Emacs for capture."
+  (pick-message "Select a Slack message" send-to-emacs))
+
+(fn visible-messages-json []
+  "Visible messages as a JSON string, for consumption outside Hammerspoon."
+  (hs.json.encode (or (get-visible-messages) [])))
+
+{:search search
+ :capture capture
+ :get-visible-messages get-visible-messages
+ :visible-messages-json visible-messages-json}
