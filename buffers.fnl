@@ -70,7 +70,8 @@
             title (. window :title)
             is-visible (. window "is-visible")
             ;; Get app icon by finding the running application and getting its bundle ID
-            app-bundle-id (-> app hs.application.find (: :bundleID))
+            app-obj (hs.application.find app)
+            app-bundle-id (when app-obj (app-obj:bundleID))
             app-icon (when app-bundle-id
                        (hs.image.imageFromAppBundle app-bundle-id))
             ;; Format: "AppName: WindowTitle"
