@@ -1,4 +1,5 @@
-;; I'm just gonna wait for Flameshot to capture an image and attempt to OCR it
+;; Flameshot leaves the capture on the pasteboard; hand it to the clipimg
+;; menu in Emacs, which reads the text, saves or uploads it.
 (local
  watcher
  (hs.application.watcher.new
@@ -11,7 +12,7 @@
        (fn []
          (hs.execute
           (.. "export PATH=$PATH:/opt/homebrew/bin && "
-              "emacsclient --eval \"(call-interactively 'ocr-clipboard-content)\""))
+              "emacsclient --eval \"(call-interactively 'clipimg)\""))
          (: (hs.application.find :Emacs)
             :activate)))))))
 
