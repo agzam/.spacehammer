@@ -152,6 +152,9 @@
 (fn toggle-maximize []
   (run-async "yabai -m window --toggle zoom-fullscreen"))
 
+(fn toggle-fullscreen []
+  (run-async "yabai -m window --toggle native-fullscreen"))
+
 (fn minimize []
   (run-async "yabai -m window --minimize"))
 
@@ -505,6 +508,7 @@
 
  : jump-window-recent
  : toggle-maximize
+ : toggle-fullscreen
  : minimize
  : toggle-float
  : toggle-sticky

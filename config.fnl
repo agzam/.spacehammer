@@ -208,10 +208,14 @@
          {:key :m
           :title "Maximize"
           :action #(yabai.toggle-maximize)}
+         {:key :f
+          :title "Fullscreen"
+          :action #(yabai.toggle-fullscreen)}
          {:key "-"
           :title "Minimize"
           :action #(yabai.minimize)}
          {:key :f
+          :mods [:shift]
           :title "float"
           :action #(yabai.toggle-float)}
          {:key :s
